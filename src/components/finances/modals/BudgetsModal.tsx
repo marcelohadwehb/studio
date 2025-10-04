@@ -60,9 +60,10 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
         </DialogHeader>
         
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 my-4">
-          {Object.keys(categories).map(cat => {
-            const categoryBudget = categories[cat].reduce((sum, subcat) => sum + (localBudgets[subcat] || 0), 0);
-            const categorySpent = categories[cat].reduce((sum, subcat) => sum + (expensesBySubcategory[subcat] || 0), 0);
+          {Object.keys(categories).sort((a, b) => a.localeCompare(b)).map(cat => {
+            const sortedSubcategories = [...categories[cat]].sort((a, b) => a.localeCompare(b));
+            const categoryBudget = sortedSubcategories.reduce((sum, subcat) => sum + (localBudgets[subcat] || 0), 0);
+            const categorySpent = sortedSubcategories.reduce((sum, subcat) => sum + (expensesBySubcategory[subcat] || 0), 0);
             const categoryDifference = categoryBudget - categorySpent;
             const differenceColor = categoryDifference >= 0 ? 'text-green-600' : 'text-red-600';
 
@@ -88,7 +89,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                       </div>
                   </div>
                   <div className="space-y-2">
-                    {categories[cat].map(subcat => (
+                    {sortedSubcategories.map(subcat => (
                       <div key={subcat} className="grid grid-cols-2 gap-4 items-center">
                         <label htmlFor={`budget-${subcat}`} className="text-sm">{subcat}</label>
                         <Input
