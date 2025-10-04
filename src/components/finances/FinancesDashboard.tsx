@@ -33,6 +33,7 @@ export function FinancesDashboard() {
 
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, onConfirm: () => void, message: string }>({ open: false, onConfirm: () => {}, message: '' });
+  const [transactionFilter, setTransactionFilter] = useState<'all' | 'income' | 'expense'>('all');
 
   const { toast } = useToast();
 
@@ -123,6 +124,13 @@ export function FinancesDashboard() {
     }, { totalIncome: 0, totalExpenses: 0, balance: 0 });
   }, [transactions]);
   
+  const filteredTransactions = useMemo(() => {
+    if (transactionFilter === 'all') {
+      return transactions;
+    }
+    return transactions.filter(t => t.type === transactionFilter);
+  }, [transactions, transactionFilter]);
+
   const handleOpenModal = useCallback((type: ModalState['type'], transactionToEdit: Transaction | null = null) => {
     setModalState({ type, transactionToEdit });
   }, []);
@@ -232,11 +240,13 @@ export function FinancesDashboard() {
         <ActionButtons onOpenModal={handleOpenModal} />
         
         <TransactionList 
-          transactions={transactions}
+          transactions={filteredTransactions}
           loading={loading}
           onEdit={(t) => handleOpenModal(t.type, t)}
           onDelete={handleDeleteTransaction}
           formatCurrency={formatCurrency}
+          filter={transactionFilter}
+          setFilter={setTransactionFilter}
         />
       </main>
 
