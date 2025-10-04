@@ -16,7 +16,7 @@ const signIn = async () => {
     try {
         await signInAnonymously(auth);
     } catch (error) {
-        console.error("Error signing in anonymously:", error);
+        console.error("Error al iniciar sesión anónimamente:", error);
         throw error;
     }
 };

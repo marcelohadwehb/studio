@@ -48,7 +48,7 @@ export function FinancesDashboard() {
         if (user) {
           setAuthStatus('success');
         } else {
-          throw new Error("Authentication failed.");
+          throw new Error("La autenticación falló.");
         }
       } catch (error) {
         setAuthStatus('error');
@@ -149,7 +149,14 @@ export function FinancesDashboard() {
     });
   }, [toast]);
   
-  const formatCurrency = (amount: number) => `$${amount.toLocaleString('es-CL')}`;
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(Math.trunc(amount));
+  };
 
   const handleExport = useCallback(async (fullYear: boolean) => {
     toast({ title: `Exportando ${fullYear ? 'año completo' : 'mes'}...` });

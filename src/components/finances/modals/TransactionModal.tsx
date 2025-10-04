@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from "date-fns";
+import { es } from 'date-fns/locale';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -102,7 +103,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
       }
       onClose();
     } catch (error) {
-      console.error("Error saving transaction: ", error);
+      console.error("Error al guardar la transacción: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar la transacción.' });
     }
   }
@@ -130,13 +131,19 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
                           variant={"outline"}
                           className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
                         >
-                          {field.value ? format(field.value, "PPP") : <span>Elige una fecha</span>}
+                          {field.value ? format(field.value, "d 'de' MMMM 'de' yyyy", { locale: es }) : <span>Elige una fecha</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                      <Calendar
+                        locale={es}
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
@@ -146,7 +153,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
 
             <FormField control={form.control} name="amount" render={({ field }) => (
               <FormItem>
-                <FormLabel>Monto ($)</FormLabel>
+                <FormLabel>Monto</FormLabel>
                 <FormControl><Input type="number" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
