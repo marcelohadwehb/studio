@@ -55,7 +55,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">Gestión de Presupuestos</DialogTitle>
         </DialogHeader>
@@ -81,22 +81,36 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                       <Progress value={Math.min(100, progress)} className="h-2 mt-1" indicatorClassName={isOverBudget ? "bg-destructive" : ""} />
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-3 pt-2">
+                  <AccordionContent className="space-y-1 pt-2">
+                    <div className="grid grid-cols-4 gap-x-4 px-2 pb-2 text-xs font-medium text-muted-foreground">
+                        <div className="col-span-1">Subcategoría</div>
+                        <div className="col-span-1 text-right">Gastado</div>
+                        <div className="col-span-1 text-right">Presupuesto</div>
+                        <div className="col-span-1 text-right">Diferencia</div>
+                    </div>
                     {categories[cat].map(subcat => {
                       const spent = expensesBySubcategory[subcat] || 0;
                       const budget = localBudgets[subcat] || 0;
+                      const difference = budget - spent;
+                      const differenceColor = difference >= 0 ? 'text-green-600' : 'text-red-600';
+                      
                       return (
-                        <div key={subcat} className="flex items-center justify-between gap-2 text-sm">
-                          <span className="text-muted-foreground w-1/3 truncate">{subcat}</span>
-                          <span className="text-xs w-1/3 text-right">{formatCurrency(spent)} gastado</span>
-                          <Input
-                            type="number"
-                            value={budget}
-                            onChange={(e) => handleBudgetChange(subcat, e.target.value)}
-                            onBlur={() => handleSaveBudget(subcat)}
-                            className="h-8 text-right w-1/3"
-                            placeholder="Presupuesto"
-                          />
+                        <div key={subcat} className="grid grid-cols-4 gap-x-4 items-center text-sm px-2 py-1 rounded-md hover:bg-accent">
+                          <span className="truncate col-span-1">{subcat}</span>
+                          <span className="text-right col-span-1">{formatCurrency(spent)}</span>
+                          <div className="col-span-1">
+                            <Input
+                                type="number"
+                                value={budget}
+                                onChange={(e) => handleBudgetChange(subcat, e.target.value)}
+                                onBlur={() => handleSaveBudget(subcat)}
+                                className="h-8 text-right w-full bg-background"
+                                placeholder="Presupuesto"
+                            />
+                          </div>
+                          <span className={`text-right font-medium col-span-1 ${differenceColor}`}>
+                              {formatCurrency(difference)}
+                          </span>
                         </div>
                       )
                     })}
