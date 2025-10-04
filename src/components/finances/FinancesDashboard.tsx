@@ -246,7 +246,7 @@ export function FinancesDashboard() {
 
   if (authStatus === 'loading' || loading) {
     return (
-      <div className="w-full max-w-2xl mx-auto">
+      <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 md:p-8">
         <Skeleton className="h-24 w-full mb-6" />
         <Skeleton className="h-12 w-full mb-6" />
         <Skeleton className="h-48 w-full" />
@@ -256,10 +256,12 @@ export function FinancesDashboard() {
 
   if (authStatus === 'error') {
     return (
-      <Card className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm text-center">
-        <h3 className="text-2xl font-bold mb-4 text-destructive">Acceso Denegado</h3>
-        <p className="text-muted-foreground">No tienes permiso para acceder a esta aplicación.</p>
-      </Card>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Card className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm text-center">
+            <h3 className="text-2xl font-bold mb-4 text-destructive">Acceso Denegado</h3>
+            <p className="text-muted-foreground">No tienes permiso para acceder a esta aplicación.</p>
+        </Card>
+      </div>
     );
   }
   
@@ -271,7 +273,7 @@ export function FinancesDashboard() {
         onExport={handleExport}
       />
       
-      <main className="p-6">
+      <main className="p-4 sm:p-6">
         <BalanceSummary 
           income={totalIncome}
           expenses={totalExpenses}

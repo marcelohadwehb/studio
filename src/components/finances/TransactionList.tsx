@@ -42,16 +42,16 @@ export function TransactionList({ transactions, loading, onEdit, onDelete, forma
 
   return (
     <section>
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-3 gap-2">
         <h2 className="text-lg font-semibold">Transacciones</h2>
-        <div className="flex items-center gap-2 rounded-full bg-gray-100 p-1">
+        <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
           {filterButtons.map(({label, value}) => (
             <Button
               key={value}
               size="sm"
               variant={filter === value ? 'default' : 'ghost'}
               onClick={() => setFilter(value)}
-              className={`rounded-full px-4 text-sm font-medium transition-colors h-8 ${filter === value ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}
+              className={`rounded-full px-3 text-xs sm:px-4 sm:text-sm font-medium transition-colors h-8`}
             >
               {label}
             </Button>
@@ -63,19 +63,19 @@ export function TransactionList({ transactions, loading, onEdit, onDelete, forma
           <p className="text-center text-muted-foreground py-4">No hay transacciones para este período y filtro.</p>
         ) : (
           sortedTransactions.map(t => (
-            <div key={t.id} className={`p-4 rounded-lg shadow-sm flex items-center justify-between ${t.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-800 capitalize">{t.description || t.subcategory}</p>
-                <p className="text-sm text-gray-500 capitalize">{format(new Date(t.timestamp), "d 'de' MMMM, yyyy", { locale: es })}</p>
+            <div key={t.id} className={`p-3 sm:p-4 rounded-lg shadow-sm flex items-center justify-between gap-2 ${t.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div className="flex-1 overflow-hidden">
+                <p className="font-semibold text-gray-800 capitalize truncate text-sm sm:text-base">{t.description || t.subcategory}</p>
+                <p className="text-xs text-gray-500 capitalize">{format(new Date(t.timestamp), "d 'de' MMMM, yyyy", { locale: es })}</p>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 text-right">
-                <span className={`font-bold text-lg ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 text-right">
+                <span className={`font-bold text-sm sm:text-lg ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(t.amount)}
                 </span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" onClick={() => onEdit(t)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-blue-500 hover:text-blue-700" onClick={() => onEdit(t)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => onDelete(t.id)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-red-500 hover:text-red-700" onClick={() => onDelete(t.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
