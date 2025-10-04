@@ -324,8 +324,10 @@ export function FinancesDashboard() {
         onConfirm={confirmDialog.onConfirm}
         message={confirmDialog.message}
       />
+      
+      <footer className="text-center p-4 text-xs text-muted-foreground">
+        Creado por Marcelo Hadweh Briceño
+      </footer>
     </div>
   );
 }
-
-    
