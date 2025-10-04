@@ -38,7 +38,7 @@ export function FinancesDashboard() {
 
   const { toast } = useToast();
 
-  const currentMonth = currentDate.getMonth() + 1;
+  const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
   useEffect(() => {
@@ -105,23 +105,20 @@ export function FinancesDashboard() {
     unsubscribes.push(onSnapshot(allTransQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
         setAllTransactions(data);
-    }));
-
-
-    const startOfMonth = new Date(currentYear, currentMonth - 1, 1).getTime();
-    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).getTime();
-    const transQuery = query(collection(db, "artifacts", appId, "public", "data", "transactions"),
-        where("timestamp", ">=", startOfMonth),
-        where("timestamp", "<=", endOfMonth)
-    );
-    unsubscribes.push(onSnapshot(transQuery, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
-        setTransactions(data);
         setLoading(false);
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [authStatus, currentMonth, currentYear]);
+  }, [authStatus]);
+
+  useEffect(() => {
+    const startOfMonth = new Date(currentYear, currentMonth, 1).getTime();
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).getTime();
+
+    const monthlyTransactions = allTransactions.filter(t => t.timestamp >= startOfMonth && t.timestamp <= endOfMonth);
+    setTransactions(monthlyTransactions);
+    
+  }, [allTransactions, currentMonth, currentYear]);
 
   const { totalIncome, totalExpenses, balance } = useMemo(() => {
     return transactions.reduce((acc, t) => {
@@ -173,14 +170,14 @@ export function FinancesDashboard() {
     let fileName = `Finanzas-Familiares`;
     const now = new Date();
 
-    let start: Date | null = null;
-    let end: Date | null = null;
-
     if (exportType === 'month') {
         transToExport = transactions;
         const monthName = currentDate.toLocaleString('es-CL', { month: 'long' });
         fileName += `-${monthName}-${currentYear}.csv`;
     } else {
+        let start: Date | null = null;
+        let end: Date | null = null;
+
         if (exportType === 'year') {
             start = new Date(currentYear, 0, 1);
             end = new Date(currentYear, 11, 31, 23, 59, 59);
@@ -190,11 +187,9 @@ export function FinancesDashboard() {
             end = now;
             fileName += `-Ultimos-5-Años.csv`;
         }
-
+        
         if (start && end) {
-            const q = query(collection(db, "artifacts", appId, "public", "data", "transactions"), where("timestamp", ">=", start.getTime()), where("timestamp", "<=", end.getTime()));
-            const querySnapshot = await getDocs(q);
-            transToExport = querySnapshot.docs.map(doc => doc.data() as Transaction);
+          transToExport = allTransactions.filter(t => t.timestamp >= start!.getTime() && t.timestamp <= end!.getTime());
         }
     }
     
@@ -233,9 +228,9 @@ export function FinancesDashboard() {
     document.body.removeChild(link);
 
     toast({ title: "¡Archivo exportado!" });
-  }, [transactions, currentYear, currentDate, toast]);
+  }, [transactions, allTransactions, currentYear, currentDate, toast]);
 
-  if (authStatus === 'loading') {
+  if (authStatus === 'loading' || loading) {
     return (
       <div className="w-full max-w-2xl mx-auto">
         <Skeleton className="h-24 w-full mb-6" />
@@ -339,3 +334,5 @@ export function FinancesDashboard() {
     </div>
   );
 }
+
+    
