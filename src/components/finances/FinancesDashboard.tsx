@@ -18,6 +18,7 @@ import { BudgetsModal } from './modals/BudgetsModal';
 import { CategoriesModal } from './modals/CategoriesModal';
 import { RecordsModal } from './modals/RecordsModal';
 import { ConfirmationDialog } from './ConfirmationDialog';
+import { PinScreen } from './PinScreen';
 
 const appId = 'default-app-id';
 
@@ -31,6 +32,8 @@ export function FinancesDashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [authStatus, setAuthStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+
 
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, onConfirm: () => void, message: string }>({ open: false, onConfirm: () => {}, message: '' });
@@ -56,11 +59,13 @@ export function FinancesDashboard() {
         setLoading(false);
       }
     };
-    initAuthAndListeners();
-  }, []);
+    if (isUnlocked) {
+        initAuthAndListeners();
+    }
+  }, [isUnlocked]);
 
   useEffect(() => {
-    if (authStatus !== 'success') return;
+    if (authStatus !== 'success' || !isUnlocked) return;
 
     const unsubscribes: (() => void)[] = [];
     setLoading(true);
@@ -109,7 +114,7 @@ export function FinancesDashboard() {
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [authStatus]);
+  }, [authStatus, isUnlocked]);
 
   useEffect(() => {
     const startOfMonth = new Date(currentYear, currentMonth, 1).getTime();
@@ -121,13 +126,18 @@ export function FinancesDashboard() {
   }, [allTransactions, currentMonth, currentYear]);
 
   const { totalIncome, totalExpenses, balance } = useMemo(() => {
-    return transactions.reduce((acc, t) => {
+    const monthFilteredTransactions = transactions.filter(t => {
+      const transDate = new Date(t.timestamp);
+      return transDate.getMonth() === currentMonth && transDate.getFullYear() === currentYear;
+    });
+
+    return monthFilteredTransactions.reduce((acc, t) => {
       if (t.type === 'income') acc.totalIncome += t.amount;
       else acc.totalExpenses += t.amount;
       acc.balance = acc.totalIncome - acc.totalExpenses;
       return acc;
     }, { totalIncome: 0, totalExpenses: 0, balance: 0 });
-  }, [transactions]);
+  }, [transactions, currentMonth, currentYear]);
   
   const filteredTransactions = useMemo(() => {
     if (transactionFilter === 'all') {
@@ -229,6 +239,10 @@ export function FinancesDashboard() {
 
     toast({ title: "¡Archivo exportado!" });
   }, [transactions, allTransactions, currentYear, currentDate, toast]);
+
+  if (!isUnlocked) {
+    return <PinScreen onUnlock={() => setIsUnlocked(true)} />;
+  }
 
   if (authStatus === 'loading' || loading) {
     return (
@@ -334,5 +348,3 @@ export function FinancesDashboard() {
     </div>
   );
 }
-
-    
