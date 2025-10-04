@@ -46,7 +46,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: transaction ? new Date(transaction.date + 'T00:00:00') : new Date(),
+      date: transaction ? new Date(transaction.timestamp) : new Date(),
       amount: transaction?.amount || 0,
       description: transaction?.description || '',
       category: transaction?.category || (type === 'expense' ? Object.keys(categories)[0] : undefined),
@@ -59,7 +59,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
   useEffect(() => {
     if (transaction) {
       form.reset({
-        date: new Date(transaction.date + 'T00:00:00'),
+        date: new Date(transaction.timestamp),
         amount: transaction.amount,
         description: transaction.description || '',
         category: transaction.category,
@@ -89,7 +89,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
       amount: values.amount,
       date: format(values.date, 'yyyy-MM-dd'),
       timestamp: values.date.getTime(),
-      ...(type === 'income' ? { description: values.description } : { category: values.category, subcategory: values.subcategory })
+      ...(type === 'income' ? { description: values.description } : { category: values.category, subcategory: values.subcategory, description: values.subcategory })
     };
 
     try {
