@@ -4,9 +4,8 @@ import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Progress } from "@/components/ui/progress";
 import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import type { Transaction, Categories, Budgets } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
@@ -61,64 +60,53 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
         </DialogHeader>
         
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 my-4">
-          <Accordion type="multiple" className="w-full">
-            {Object.keys(categories).map(cat => {
-              const categoryBudget = categories[cat].reduce((sum, subcat) => sum + (localBudgets[subcat] || 0), 0);
-              const categorySpent = categories[cat].reduce((sum, subcat) => sum + (expensesBySubcategory[subcat] || 0), 0);
-              const progress = categoryBudget > 0 ? (categorySpent / categoryBudget) * 100 : 0;
-              const isOverBudget = progress > 100;
+          {Object.keys(categories).map(cat => {
+            const categoryBudget = categories[cat].reduce((sum, subcat) => sum + (localBudgets[subcat] || 0), 0);
+            const categorySpent = categories[cat].reduce((sum, subcat) => sum + (expensesBySubcategory[subcat] || 0), 0);
+            const categoryDifference = categoryBudget - categorySpent;
+            const differenceColor = categoryDifference >= 0 ? 'text-green-600' : 'text-red-600';
 
-              return (
-                <AccordionItem value={cat} key={cat}>
-                  <AccordionTrigger>
-                    <div className="w-full">
-                      <div className="flex justify-between font-semibold">
-                        <span>{cat}</span>
-                        <span className={isOverBudget ? 'text-destructive' : ''}>
-                          {formatCurrency(categorySpent)} / {formatCurrency(categoryBudget)}
-                        </span>
+            return (
+              <Card key={cat}>
+                <CardHeader className="flex-row items-center justify-between p-4">
+                  <CardTitle className="text-lg">{cat}</CardTitle>
+                  <span className="text-sm font-semibold text-muted-foreground">Total: {formatCurrency(categoryBudget)}</span>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <div className="grid grid-cols-3 gap-2 mb-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Presupuesto: </span>
+                        <span className="font-semibold">{formatCurrency(categoryBudget)}</span>
                       </div>
-                      <Progress value={Math.min(100, progress)} className="h-2 mt-1" indicatorClassName={isOverBudget ? "bg-destructive" : ""} />
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-1 pt-2">
-                    <div className="grid grid-cols-4 gap-x-4 px-2 pb-2 text-xs font-medium text-muted-foreground">
-                        <div className="col-span-1">Subcategoría</div>
-                        <div className="col-span-1 text-right">Gastado</div>
-                        <div className="col-span-1 text-right">Presupuesto</div>
-                        <div className="col-span-1 text-right">Diferencia</div>
-                    </div>
-                    {categories[cat].map(subcat => {
-                      const spent = expensesBySubcategory[subcat] || 0;
-                      const budget = localBudgets[subcat] || 0;
-                      const difference = budget - spent;
-                      const differenceColor = difference >= 0 ? 'text-green-600' : 'text-red-600';
-                      
-                      return (
-                        <div key={subcat} className="grid grid-cols-4 gap-x-4 items-center text-sm px-2 py-1 rounded-md hover:bg-accent">
-                          <span className="truncate col-span-1">{subcat}</span>
-                          <span className="text-right col-span-1">{formatCurrency(spent)}</span>
-                          <div className="col-span-1">
-                            <Input
-                                type="number"
-                                value={budget}
-                                onChange={(e) => handleBudgetChange(subcat, e.target.value)}
-                                onBlur={() => handleSaveBudget(subcat)}
-                                className="h-8 text-right w-full bg-background"
-                                placeholder="Presupuesto"
-                            />
-                          </div>
-                          <span className={`text-right font-medium col-span-1 ${differenceColor}`}>
-                              {formatCurrency(difference)}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </AccordionContent>
-                </AccordionItem>
-              )
-            })}
-          </Accordion>
+                      <div>
+                        <span className="text-muted-foreground">Gastado: </span>
+                        <span className="font-semibold">{formatCurrency(categorySpent)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Diferencial: </span>
+                        <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span>
+                      </div>
+                  </div>
+                  <div className="space-y-2">
+                    {categories[cat].map(subcat => (
+                      <div key={subcat} className="grid grid-cols-2 gap-4 items-center">
+                        <label htmlFor={`budget-${subcat}`} className="text-sm">{subcat}</label>
+                        <Input
+                          id={`budget-${subcat}`}
+                          type="number"
+                          value={localBudgets[subcat] || 0}
+                          onChange={(e) => handleBudgetChange(subcat, e.target.value)}
+                          onBlur={() => handleSaveBudget(subcat)}
+                          className="h-9 text-right w-full bg-background"
+                          placeholder="0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         <DialogFooter>
