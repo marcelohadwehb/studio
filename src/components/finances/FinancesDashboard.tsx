@@ -158,16 +158,36 @@ export function FinancesDashboard() {
     }).format(Math.trunc(amount));
   };
 
-  const handleExport = useCallback(async (fullYear: boolean) => {
-    toast({ title: `Exportando ${fullYear ? 'año completo' : 'mes'}...` });
+  const handleExport = useCallback(async (exportType: 'month' | 'year' | 'last5years') => {
+    toast({ title: `Exportando...` });
     
-    let transToExport = transactions;
-    if (fullYear) {
-      const start = new Date(currentYear, 0, 1).getTime();
-      const end = new Date(currentYear, 11, 31, 23, 59, 59).getTime();
-      const q = query(collection(db, "artifacts", appId, "public", "data", "transactions"), where("timestamp", ">=", start), where("timestamp", "<=", end));
-      const querySnapshot = await getDocs(q);
-      transToExport = querySnapshot.docs.map(doc => doc.data() as Transaction);
+    let transToExport: Transaction[] = [];
+    let fileName = `Finanzas-Familiares`;
+    const now = new Date();
+
+    let start: Date | null = null;
+    let end: Date | null = null;
+
+    if (exportType === 'month') {
+        transToExport = transactions;
+        const monthName = currentDate.toLocaleString('es-CL', { month: 'long' });
+        fileName += `-${monthName}-${currentYear}.csv`;
+    } else {
+        if (exportType === 'year') {
+            start = new Date(currentYear, 0, 1);
+            end = new Date(currentYear, 11, 31, 23, 59, 59);
+            fileName += `-Año-${currentYear}.csv`;
+        } else if (exportType === 'last5years') {
+            start = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+            end = now;
+            fileName += `-Ultimos-5-Años.csv`;
+        }
+
+        if (start && end) {
+            const q = query(collection(db, "artifacts", appId, "public", "data", "transactions"), where("timestamp", ">=", start.getTime()), where("timestamp", "<=", end.getTime()));
+            const querySnapshot = await getDocs(q);
+            transToExport = querySnapshot.docs.map(doc => doc.data() as Transaction);
+        }
     }
     
     const recordsSnapshot = await getDocs(collection(db, "artifacts", appId, "public", "data", "records"));
@@ -199,8 +219,6 @@ export function FinancesDashboard() {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    const monthName = currentDate.toLocaleString('es-CL', { month: 'long' });
-    const fileName = fullYear ? `Finanzas-Familiares-Año-${currentYear}.csv` : `Finanzas-Familiares-${monthName}-${currentYear}.csv`;
     link.setAttribute("download", fileName);
     document.body.appendChild(link);
     link.click();
@@ -309,3 +327,5 @@ export function FinancesDashboard() {
     </div>
   );
 }
+
+    

@@ -8,13 +8,19 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Download, Info } from "lucide-react"
 import { useMemo } from "react";
 
 interface HeaderProps {
   currentDate: Date;
   setCurrentDate: (date: Date) => void;
-  onExport: (fullYear: boolean) => void;
+  onExport: (exportType: 'month' | 'year' | 'last5years') => void;
 }
 
 export function Header({ currentDate, setCurrentDate, onExport }: HeaderProps) {
@@ -61,16 +67,29 @@ export function Header({ currentDate, setCurrentDate, onExport }: HeaderProps) {
           </Select>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => onExport(false)} variant="outline" size="icon" className="bg-white hover:bg-gray-200 text-blue-500 rounded-full shadow-md transition-transform duration-200 transform hover:scale-105 border-0">
-            <Download className="h-5 w-5" />
-            <span className="sr-only">Exportar Mes</span>
-          </Button>
-          <Button onClick={() => onExport(true)} variant="outline" size="icon" className="bg-white hover:bg-gray-200 text-blue-500 rounded-full shadow-md transition-transform duration-200 transform hover:scale-105 border-0">
-            <Info className="h-5 w-5" />
-            <span className="sr-only">Exportar Año</span>
-          </Button>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="bg-white hover:bg-gray-200 text-blue-500 rounded-full shadow-md transition-transform duration-200 transform hover:scale-105 border-0">
+                <Download className="h-5 w-5" />
+                <span className="sr-only">Exportar</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onExport('month')}>
+                Exportar Mes Actual
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport('year')}>
+                Exportar Año Actual
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport('last5years')}>
+                Exportar Últimos 5 Años
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
   );
 }
+
+    
