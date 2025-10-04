@@ -23,6 +23,7 @@ const appId = 'default-app-id';
 
 export function FinancesDashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Categories>({});
   const [budgets, setBudgets] = useState<Budgets>({});
   const [records, setRecords] = useState<RecordItem[]>([]);
@@ -99,6 +100,13 @@ export function FinancesDashboard() {
     
     setupListener("budgets", "budgets", setBudgets);
     setupListener("records", null, setRecords);
+    
+    const allTransQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
+    unsubscribes.push(onSnapshot(allTransQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
+        setAllTransactions(data);
+    }));
+
 
     const startOfMonth = new Date(currentYear, currentMonth - 1, 1).getTime();
     const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).getTime();
@@ -293,7 +301,7 @@ export function FinancesDashboard() {
               onClose={handleCloseModal}
               categories={categories}
               budgets={budgets}
-              transactions={transactions}
+              transactions={allTransactions}
               appId={appId}
               formatCurrency={formatCurrency}
             />
