@@ -88,21 +88,38 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                         <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span>
                       </div>
                   </div>
-                  <div className="space-y-2">
-                    {sortedSubcategories.map(subcat => (
-                      <div key={subcat} className="grid grid-cols-2 gap-4 items-center">
-                        <label htmlFor={`budget-${subcat}`} className="text-sm">{subcat}</label>
-                        <Input
-                          id={`budget-${subcat}`}
-                          type="number"
-                          value={localBudgets[subcat] || 0}
-                          onChange={(e) => handleBudgetChange(subcat, e.target.value)}
-                          onBlur={() => handleSaveBudget(subcat)}
-                          className="h-9 text-right w-full bg-background"
-                          placeholder="0"
-                        />
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-4 gap-4 px-2 pb-2 text-xs font-medium text-muted-foreground border-b">
+                      <div className="col-span-1">Subcategoría</div>
+                      <div className="col-span-1 text-right">Gastado</div>
+                      <div className="col-span-1 text-right">Presupuesto</div>
+                      <div className="col-span-1 text-right">Diferencial</div>
+                    </div>
+                    {sortedSubcategories.map(subcat => {
+                      const subcatSpent = expensesBySubcategory[subcat] || 0;
+                      const subcatBudget = localBudgets[subcat] || 0;
+                      const subcatDiff = subcatBudget - subcatSpent;
+                      const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
+
+                      return (
+                        <div key={subcat} className="grid grid-cols-4 gap-4 items-center text-sm">
+                          <label htmlFor={`budget-${subcat}`} className="col-span-1 truncate">{subcat}</label>
+                          <div className="col-span-1 text-right text-muted-foreground">{formatCurrency(subcatSpent)}</div>
+                          <div className="col-span-1">
+                            <Input
+                              id={`budget-${subcat}`}
+                              type="number"
+                              value={subcatBudget}
+                              onChange={(e) => handleBudgetChange(subcat, e.target.value)}
+                              onBlur={() => handleSaveBudget(subcat)}
+                              className="h-8 text-right w-full bg-background"
+                              placeholder="0"
+                            />
+                          </div>
+                           <div className={`col-span-1 text-right font-medium ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
