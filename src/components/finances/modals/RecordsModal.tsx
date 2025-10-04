@@ -1,0 +1,159 @@
+'use client';
+
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { PlusCircle, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { ConfirmationDialog } from '../ConfirmationDialog';
+
+import type { RecordItem, RecordEntry } from '@/lib/types';
+import { addDoc, collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+interface RecordsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  records: RecordItem[];
+  appId: string;
+  formatCurrency: (amount: number) => string;
+}
+
+export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }: RecordsModalProps) {
+  const [newRecordName, setNewRecordName] = useState('');
+  const [newEntry, setNewEntry] = useState<{ [key: string]: { description: string, amount: string } }>({});
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, onConfirm: () => void, message: string }>({ open: false, onConfirm: () => {}, message: '' });
+  const { toast } = useToast();
+
+  const handleAddRecord = async () => {
+    if (newRecordName.trim()) {
+      try {
+        await addDoc(collection(db, "artifacts", appId, "public", "data", "records"), {
+          name: newRecordName,
+          entries: '[]'
+        });
+        setNewRecordName('');
+        toast({ title: 'Registro agregado.' });
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error al agregar registro.' });
+      }
+    }
+  };
+
+  const handleDeleteRecord = (recordId: string) => {
+    setConfirmDialog({
+      open: true,
+      message: '¿Seguro que quieres eliminar este registro y todas sus entradas?',
+      onConfirm: async () => {
+        await deleteDoc(doc(db, "artifacts", appId, "public", "data", "records", recordId));
+        setConfirmDialog({ open: false, onConfirm: () => {}, message: '' });
+        toast({ title: 'Registro eliminado.' });
+      }
+    });
+  };
+
+  const handleAddEntry = async (record: RecordItem) => {
+    const entry = newEntry[record.id];
+    if (entry?.description.trim() && parseFloat(entry.amount) > 0) {
+      const currentEntries: RecordEntry[] = JSON.parse(record.entries);
+      const updatedEntries = [...currentEntries, { description: entry.description, amount: parseFloat(entry.amount) }];
+      await updateDoc(doc(db, "artifacts", appId, "public", "data", "records", record.id), { entries: JSON.stringify(updatedEntries) });
+      setNewEntry(prev => ({ ...prev, [record.id]: { description: '', amount: '' } }));
+    }
+  };
+
+  const handleDeleteEntry = async (record: RecordItem, entryIndex: number) => {
+      const currentEntries: RecordEntry[] = JSON.parse(record.entries);
+      const updatedEntries = currentEntries.filter((_, index) => index !== entryIndex);
+      await updateDoc(doc(db, "artifacts", appId, "public", "data", "records", record.id), { entries: JSON.stringify(updatedEntries) });
+  };
+  
+  const getRecordTotal = (record: RecordItem) => {
+    const entries: RecordEntry[] = JSON.parse(record.entries);
+    return entries.reduce((sum, entry) => sum + entry.amount, 0);
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">Gestión de Registros</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex gap-2 my-4">
+            <Input
+              placeholder="Nombre del nuevo registro"
+              value={newRecordName}
+              onChange={(e) => setNewRecordName(e.target.value)}
+            />
+            <Button onClick={handleAddRecord}>Agregar</Button>
+          </div>
+
+          <div className="max-h-[50vh] overflow-y-auto pr-2">
+            <Accordion type="multiple" className="w-full">
+              {records.map(record => (
+                <AccordionItem value={record.id} key={record.id}>
+                  <AccordionTrigger>
+                    <div className="flex justify-between items-center w-full">
+                      <span className="font-semibold">{record.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-muted-foreground">{formatCurrency(getRecordTotal(record))}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteRecord(record.id); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pl-4 space-y-2">
+                    {JSON.parse(record.entries).map((entry: RecordEntry, index: number) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <span>{entry.description}</span>
+                        <div className="flex items-center gap-2">
+                            <span>{formatCurrency(entry.amount)}</span>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteEntry(record, index)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex gap-2 items-center pt-2">
+                      <Input
+                        placeholder="Nueva descripción"
+                        className="h-8"
+                        value={newEntry[record.id]?.description || ''}
+                        onChange={(e) => setNewEntry(prev => ({...prev, [record.id]: { ...prev[record.id], description: e.target.value }}))}
+                      />
+                       <Input
+                        type="number"
+                        placeholder="Monto"
+                        className="h-8 w-28"
+                        value={newEntry[record.id]?.amount || ''}
+                        onChange={(e) => setNewEntry(prev => ({...prev, [record.id]: { ...prev[record.id], amount: e.target.value }}))}
+                      />
+                      <Button size="icon" className="h-8 w-8" onClick={() => handleAddEntry(record)}>
+                        <PlusCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => !open && setConfirmDialog({ open: false, onConfirm: () => {}, message: '' })}
+        onConfirm={confirmDialog.onConfirm}
+        message={confirmDialog.message}
+      />
+    </>
+  );
+}
