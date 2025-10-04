@@ -301,7 +301,7 @@ export function FinancesDashboard() {
               onClose={handleCloseModal}
               categories={categories}
               budgets={budgets}
-              transactions={allTransactions}
+              transactions={transactions}
               appId={appId}
               formatCurrency={formatCurrency}
             />
