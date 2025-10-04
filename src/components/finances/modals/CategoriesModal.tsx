@@ -91,7 +91,7 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
 
           <div className="max-h-[50vh] overflow-y-auto pr-2">
             <Accordion type="multiple" className="w-full">
-              {Object.keys(categories).map(cat => (
+              {Object.keys(categories).sort((a, b) => a.localeCompare(b)).map(cat => (
                 <AccordionItem value={cat} key={cat}>
                   <AccordionTrigger>
                     <div className="flex justify-between items-center w-full">
@@ -102,7 +102,7 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pl-4 space-y-2">
-                    {categories[cat].map(subcat => (
+                    {categories[cat].sort((a, b) => a.localeCompare(b)).map(subcat => (
                       <div key={subcat} className="flex items-center justify-between text-sm">
                         <span>{subcat}</span>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteSubcategory(cat, subcat)}>

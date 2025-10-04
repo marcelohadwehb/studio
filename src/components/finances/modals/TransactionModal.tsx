@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -43,18 +43,27 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
   const isEditing = !!transaction;
   const { toast } = useToast();
 
+  const sortedCategories = useMemo(() => Object.keys(categories).sort((a, b) => a.localeCompare(b)), [categories]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: transaction ? new Date(transaction.timestamp) : new Date(),
       amount: transaction?.amount || 0,
       description: transaction?.description || '',
-      category: transaction?.category || (type === 'expense' ? Object.keys(categories)[0] : undefined),
-      subcategory: transaction?.subcategory || (type === 'expense' ? categories[Object.keys(categories)[0]]?.[0] : undefined),
+      category: transaction?.category || (type === 'expense' ? sortedCategories[0] : undefined),
+      subcategory: transaction?.subcategory || (type === 'expense' ? categories[sortedCategories[0]]?.[0] : undefined),
     }
   });
   
   const selectedCategory = form.watch('category');
+
+  const sortedSubcategories = useMemo(() => {
+    if (selectedCategory && categories[selectedCategory]) {
+      return [...categories[selectedCategory]].sort((a, b) => a.localeCompare(b));
+    }
+    return [];
+  }, [selectedCategory, categories]);
 
   useEffect(() => {
     if (transaction) {
@@ -66,22 +75,22 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
         subcategory: transaction.subcategory,
       });
     } else {
-      const defaultCategory = type === 'expense' ? Object.keys(categories)[0] : undefined;
+      const defaultCategory = type === 'expense' ? sortedCategories[0] : undefined;
       form.reset({
         date: new Date(),
         amount: 0,
         description: '',
         category: defaultCategory,
-        subcategory: defaultCategory ? categories[defaultCategory]?.[0] : undefined
+        subcategory: defaultCategory ? categories[defaultCategory]?.sort((a,b) => a.localeCompare(b))[0] : undefined
       });
     }
-  }, [transaction, isOpen, form, categories, type]);
+  }, [transaction, isOpen, form, categories, type, sortedCategories]);
 
   useEffect(() => {
     if (type === 'expense' && selectedCategory && !transaction) {
-      form.setValue('subcategory', categories[selectedCategory]?.[0]);
+      form.setValue('subcategory', sortedSubcategories[0]);
     }
-  }, [selectedCategory, form, categories, type, transaction]);
+  }, [selectedCategory, form, type, transaction, sortedSubcategories]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const data = {
@@ -167,7 +176,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una categoría" /></SelectTrigger></FormControl>
                       <SelectContent>
-                        {Object.keys(categories).map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {sortedCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -180,7 +189,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
                         <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una subcategoría" /></SelectTrigger></FormControl>
                         <SelectContent>
-                            {categories[selectedCategory].map(sub => <SelectItem key={sub} value={sub}>{sub}</SelectItem>)}
+                            {sortedSubcategories.map(sub => <SelectItem key={sub} value={sub}>{sub}</SelectItem>)}
                         </SelectContent>
                         </Select>
                         <FormMessage />
