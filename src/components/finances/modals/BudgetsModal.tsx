@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Save } from 'lucide-react';
 
 import type { Transaction, Categories, Budgets } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
@@ -89,11 +90,12 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                       </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-4 gap-4 px-2 pb-2 text-xs font-medium text-muted-foreground border-b">
+                    <div className="grid grid-cols-[1fr,1fr,1fr,1fr,auto] gap-4 px-2 pb-2 text-xs font-medium text-muted-foreground border-b">
                       <div className="col-span-1">Subcategoría</div>
                       <div className="col-span-1 text-right">Gastado</div>
                       <div className="col-span-1 text-right">Presupuesto</div>
                       <div className="col-span-1 text-right">Diferencial</div>
+                      <div />
                     </div>
                     {sortedSubcategories.map(subcat => {
                       const subcatSpent = expensesBySubcategory[subcat] || 0;
@@ -102,7 +104,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                       const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
 
                       return (
-                        <div key={subcat} className="grid grid-cols-4 gap-4 items-center text-sm">
+                        <div key={subcat} className="grid grid-cols-[1fr,1fr,1fr,1fr,auto] gap-4 items-center text-sm">
                           <label htmlFor={`budget-${subcat}`} className="col-span-1 truncate">{subcat}</label>
                           <div className="col-span-1 text-right text-muted-foreground">{formatCurrency(subcatSpent)}</div>
                           <div className="col-span-1">
@@ -111,12 +113,14 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                               type="number"
                               value={subcatBudget}
                               onChange={(e) => handleBudgetChange(subcat, e.target.value)}
-                              onBlur={() => handleSaveBudget(subcat)}
                               className="h-8 text-right w-full bg-background"
                               placeholder="0"
                             />
                           </div>
                            <div className={`col-span-1 text-right font-medium ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</div>
+                           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSaveBudget(subcat)}>
+                              <Save className="h-4 w-4" />
+                           </Button>
                         </div>
                       )
                     })}
