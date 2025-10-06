@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { BrainCircuit } from 'lucide-react';
 
 interface ActionButtonsProps {
   onOpenModal: (type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'aiAdvisor') => void;
@@ -29,10 +28,9 @@ export function ActionButtons({ onOpenModal }: ActionButtonsProps) {
       ))}
       <Button
           onClick={() => onOpenModal('aiAdvisor')}
-          className="font-semibold py-2 px-3 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 text-white flex flex-col items-center justify-center gap-1 h-14 whitespace-normal"
+          className="font-semibold py-2 px-3 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center h-14 whitespace-normal"
         >
-          <BrainCircuit className="w-5 h-5" />
-          <span>Asesor IA</span>
+          Asesor IA
         </Button>
     </section>
   );
