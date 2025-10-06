@@ -397,15 +397,6 @@ export function FinancesDashboard() {
               onClean={handleCleanData}
             />
           )}
-          {modalState.type === 'aiAdvisor' && (
-            <AIAdvisorModal
-              isOpen={true}
-              onClose={handleCloseModal}
-              categories={categories}
-              budgets={budgets}
-              transactions={transactionsForCurrentMonth}
-            />
-          )}
         </>
       )}
 
