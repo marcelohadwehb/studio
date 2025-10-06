@@ -11,7 +11,7 @@ interface PinScreenProps {
   onUnlock: () => void;
 }
 
-const CORRECT_PIN = "1902";
+const CORRECT_PIN = process.env.NEXT_PUBLIC_PIN_CODE;
 
 export function PinScreen({ onUnlock }: PinScreenProps) {
   const [pin, setPin] = useState('');
