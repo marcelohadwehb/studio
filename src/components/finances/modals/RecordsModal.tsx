@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '../ConfirmationDialog';
+import { formatNumber, parseFormattedNumber } from '@/lib/utils';
 
 import type { RecordItem, RecordEntry } from '@/lib/types';
 import { addDoc, collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -56,11 +57,11 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
 
   const handleAddEntry = async (record: RecordItem) => {
     const entry = newEntry[record.id];
-    if (entry?.description.trim() && parseFloat(entry.amount) > 0) {
+    if (entry?.description.trim() && parseFormattedNumber(entry.amount) > 0) {
       const currentEntries: RecordEntry[] = JSON.parse(record.entries);
-      const updatedEntries = [...currentEntries, { description: entry.description, amount: parseFloat(entry.amount) }];
+      const updatedEntries = [...currentEntries, { description: entry.description, amount: parseFormattedNumber(entry.amount) }];
       await updateDoc(doc(db, "artifacts", appId, "public", "data", "records", record.id), { entries: JSON.stringify(updatedEntries) });
-      setNewEntry(prev => ({ ...prev, [record.id]: { description: '', amount: '' } }));
+      setNewEntry(prev => ({ ...prev, [record.id]: { description: '', amount: '0' } }));
     }
   };
 
@@ -71,8 +72,20 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
   };
   
   const getRecordTotal = (record: RecordItem) => {
-    const entries: RecordEntry[] = JSON.parse(record.entries);
-    return entries.reduce((sum, entry) => sum + entry.amount, 0);
+    try {
+      const entries: RecordEntry[] = JSON.parse(record.entries);
+      return entries.reduce((sum, entry) => sum + entry.amount, 0);
+    } catch {
+      return 0;
+    }
+  };
+
+  const handleNewEntryAmountChange = (recordId: string, value: string) => {
+    const formattedValue = formatNumber(parseFormattedNumber(value));
+     setNewEntry(prev => ({
+      ...prev,
+      [recordId]: { ...(prev[recordId] || { description: '' }), amount: formattedValue },
+    }));
   };
 
   return (
@@ -127,11 +140,10 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
                         onChange={(e) => setNewEntry(prev => ({...prev, [record.id]: { ...prev[record.id], description: e.target.value }}))}
                       />
                        <Input
-                        type="number"
                         placeholder="Monto"
                         className="h-8 w-28"
-                        value={newEntry[record.id]?.amount || ''}
-                        onChange={(e) => setNewEntry(prev => ({...prev, [record.id]: { ...prev[record.id], amount: e.target.value }}))}
+                        value={newEntry[record.id]?.amount || '0'}
+                        onChange={(e) => handleNewEntryAmountChange(record.id, e.target.value)}
                       />
                       <Button size="icon" className="h-8 w-8" onClick={() => handleAddEntry(record)}>
                         <PlusCircle className="h-4 w-4" />

@@ -158,12 +158,7 @@ export function FinancesDashboard() {
   }, [toast]);
   
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(Math.trunc(amount));
+    return `$ ${new Intl.NumberFormat('es-CL').format(Math.trunc(amount))}`;
   };
 
   const handleExport = useCallback(async (exportType: 'month' | 'year' | 'last5years') => {

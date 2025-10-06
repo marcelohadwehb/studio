@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatNumber, parseFormattedNumber } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import { Transaction, Categories } from '@/lib/types';
@@ -24,7 +24,7 @@ import { db } from '@/lib/firebase';
 
 const formSchema = z.object({
   date: z.date({ required_error: "La fecha es requerida." }),
-  amount: z.coerce.number().min(1, "El monto debe ser mayor a 0."),
+  amount: z.string().refine(val => parseFormattedNumber(val) > 0, { message: "El monto debe ser mayor a 0."}),
   description: z.string().optional(),
   category: z.string().optional(),
   subcategory: z.string().optional(),
@@ -49,7 +49,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: transaction ? new Date(transaction.timestamp) : new Date(),
-      amount: transaction?.amount || 0,
+      amount: transaction ? formatNumber(transaction.amount) : '0',
       description: transaction?.description || '',
       category: transaction?.category || (type === 'expense' ? sortedCategories[0] : undefined),
       subcategory: transaction?.subcategory || (type === 'expense' ? categories[sortedCategories[0]]?.[0] : undefined),
@@ -69,7 +69,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
     if (transaction) {
       form.reset({
         date: new Date(transaction.timestamp),
-        amount: transaction.amount,
+        amount: formatNumber(transaction.amount),
         description: transaction.description || '',
         category: transaction.category,
         subcategory: transaction.subcategory,
@@ -78,7 +78,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
       const defaultCategory = type === 'expense' ? sortedCategories[0] : undefined;
       form.reset({
         date: new Date(),
-        amount: 0,
+        amount: '0',
         description: '',
         category: defaultCategory,
         subcategory: defaultCategory ? categories[defaultCategory]?.sort((a,b) => a.localeCompare(b))[0] : undefined
@@ -95,7 +95,7 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const data = {
       type,
-      amount: values.amount,
+      amount: parseFormattedNumber(values.amount),
       date: format(values.date, 'yyyy-MM-dd'),
       timestamp: values.date.getTime(),
       ...(type === 'income' ? { description: values.description } : { category: values.category, subcategory: values.subcategory, description: values.subcategory })
@@ -116,6 +116,13 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar la transacción.' });
     }
   }
+  
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { value } = e.target;
+      const formattedValue = formatNumber(parseFormattedNumber(value));
+      form.setValue('amount', formattedValue);
+  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -163,7 +170,9 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
             <FormField control={form.control} name="amount" render={({ field }) => (
               <FormItem>
                 <FormLabel>Monto</FormLabel>
-                <FormControl><Input type="number" {...field} /></FormControl>
+                <FormControl>
+                    <Input {...field} onChange={handleAmountChange} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}/>

@@ -11,6 +11,7 @@ import { Save } from 'lucide-react';
 import type { Transaction, Categories, Budgets } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { formatNumber, parseFormattedNumber } from '@/lib/utils';
 
 interface BudgetsModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
   }, [transactions]);
   
   const handleBudgetChange = (subcategory: string, value: string) => {
-    const amount = parseInt(value, 10) || 0;
+    const amount = parseFormattedNumber(value);
     setLocalBudgets(prev => ({ ...prev, [subcategory]: amount }));
   };
 
@@ -110,8 +111,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                           <div className="col-span-1">
                             <Input
                               id={`budget-${subcat}`}
-                              type="number"
-                              value={subcatBudget}
+                              value={formatNumber(subcatBudget)}
                               onChange={(e) => handleBudgetChange(subcat, e.target.value)}
                               className="h-8 text-right w-full bg-background"
                               placeholder="0"
@@ -138,5 +138,3 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
-
-    
