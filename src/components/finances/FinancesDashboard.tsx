@@ -20,7 +20,6 @@ import { RecordsModal } from './modals/RecordsModal';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { PinScreen } from './PinScreen';
 import { CleanDataModal } from './modals/CleanDataModal';
-import { AIAdvisorModal } from './modals/AIAdvisorModal';
 
 
 const appId = 'default-app-id';
