@@ -110,9 +110,7 @@ export function FinancesDashboard() {
     const allTransQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
     unsubscribes.push(onSnapshot(allTransQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
-        // Filter out test data
-        const filteredData = data.filter(t => !t.description?.toLowerCase().includes('prueba'));
-        setAllTransactions(filteredData);
+        setAllTransactions(data);
         setLoading(false);
     }));
 
@@ -179,8 +177,7 @@ export function FinancesDashboard() {
         const transQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
         const querySnapshot = await getDocs(transQuery);
         return querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as Transaction))
-          .filter(t => !t.description?.toLowerCase().includes('prueba'));
+          .map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
     };
 
     const allDbTransactions = await fetchAllTransactions();
@@ -396,5 +393,3 @@ export function FinancesDashboard() {
     </div>
   );
 }
-
-    
