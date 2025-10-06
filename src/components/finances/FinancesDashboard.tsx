@@ -217,6 +217,22 @@ export function FinancesDashboard() {
         t.subcategory || '',
         t.amount.toString()
     ]);
+    
+    const expensesByCategory = transToExport
+      .filter(t => t.type === 'expense' && t.category)
+      .reduce((acc, t) => {
+        if (!acc[t.category!]) {
+          acc[t.category!] = 0;
+        }
+        acc[t.category!] += t.amount;
+        return acc;
+      }, {} as { [key: string]: number });
+
+    const summaryHeaders = ["Categoría", "Monto Total Gastado"];
+    const summaryRows = Object.entries(expensesByCategory).map(([category, total]) => [
+      category,
+      total.toString()
+    ]);
 
     const recordsHeaders = ["Registro", "Descripción", "Monto"];
     const recordsRows = allRecords.flatMap(record => {
@@ -230,7 +246,13 @@ export function FinancesDashboard() {
       }
     });
 
-    const csvContent = "\uFEFF" + "TRANSACCIONES\n" + toCsv(transHeaders, transRows) + "\n\nREGISTROS\n" + toCsv(recordsHeaders, recordsRows);
+    const csvContent = "\uFEFF" + 
+      "TRANSACCIONES\n" + 
+      toCsv(transHeaders, transRows) + "\n\n" +
+      "RESUMEN DE GASTOS POR CATEGORÍA\n" +
+      toCsv(summaryHeaders, summaryRows) + "\n\n" +
+      "REGISTROS\n" + 
+      toCsv(recordsHeaders, recordsRows);
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -413,3 +435,5 @@ export function FinancesDashboard() {
     </div>
   );
 }
+
+    
