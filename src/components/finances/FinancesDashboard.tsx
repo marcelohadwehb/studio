@@ -139,7 +139,7 @@ export function FinancesDashboard() {
     return transactionsForCurrentMonth.filter(t => t.type === transactionFilter);
   }, [transactionsForCurrentMonth, transactionFilter]);
 
-  const handleOpenModal = useCallback((type: ModalState['type'], transactionToEdit: Transaction | null = null) => {
+  const handleOpenModal = useCallback((type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'cleanData', transactionToEdit: Transaction | null = null) => {
     setModalState({ type, transactionToEdit });
   }, []);
 
