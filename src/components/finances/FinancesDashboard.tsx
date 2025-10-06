@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, auth, signIn } from '@/lib/firebase';
-import { collection, onSnapshot, doc, setDoc, query, where, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, query, where, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { Transaction, Categories, Budgets, RecordItem, ModalState } from '@/lib/types';
 
 import { Card } from '@/components/ui/card';
@@ -244,30 +244,50 @@ export function FinancesDashboard() {
     toast({ title: "¡Archivo exportado!" });
   }, [currentMonth, currentYear, currentDate, toast]);
   
-  const handleCleanData = async (year: number) => {
+  const handleCleanData = async (startDate: Date, endDate: Date) => {
     setConfirmDialog({
       open: true,
-      message: `¿Estás 100% seguro de que quieres eliminar TODAS las transacciones del año ${year}? Esta acción es irreversible.`,
+      message: `¿Estás 100% seguro de que quieres eliminar TODAS las transacciones entre ${startDate.toLocaleDateString()} y ${endDate.toLocaleDateString()}? Esta acción es irreversible.`,
       onConfirm: async () => {
         toast({ title: 'Limpiando datos...' });
-        const startOfYear = new Date(year, 0, 1).getTime();
-        const endOfYear = new Date(year, 11, 31, 23, 59, 59).getTime();
+        
+        const startTime = startDate.getTime();
+        const endTime = endDate.getTime();
 
         const transQuery = query(
           collection(db, "artifacts", appId, "public", "data", "transactions"),
-          where("timestamp", ">=", startOfYear),
-          where("timestamp", "<=", endOfYear)
+          where("timestamp", ">=", startTime),
+          where("timestamp", "<=", endTime)
         );
 
         const snapshot = await getDocs(transQuery);
-        const deletePromises: Promise<void>[] = [];
-        snapshot.forEach(doc => {
-          deletePromises.push(deleteDoc(doc.ref));
+        if (snapshot.empty) {
+          toast({ title: 'No hay datos para limpiar en el período seleccionado.', variant: 'default' });
+          setConfirmDialog({ open: false, onConfirm: () => {}, message: '' });
+          handleCloseModal();
+          return;
+        }
+
+        // Firestore batch writes are limited to 500 operations.
+        const batchArray = [];
+        batchArray.push(writeBatch(db));
+        let operationCount = 0;
+        let batchIndex = 0;
+
+        snapshot.docs.forEach(doc => {
+            batchArray[batchIndex].delete(doc.ref);
+            operationCount++;
+
+            if (operationCount === 499) {
+                batchArray.push(writeBatch(db));
+                batchIndex++;
+                operationCount = 0;
+            }
         });
 
-        await Promise.all(deletePromises);
+        await Promise.all(batchArray.map(batch => batch.commit()));
         
-        toast({ title: `¡Transacciones del año ${year} eliminadas!` });
+        toast({ title: `¡${snapshot.size} transacciones eliminadas!` });
         setConfirmDialog({ open: false, onConfirm: () => {}, message: '' });
         handleCloseModal();
       }

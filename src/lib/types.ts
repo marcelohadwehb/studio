@@ -32,5 +32,3 @@ export interface ModalState {
   type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'cleanData' | null;
   transactionToEdit?: Transaction | null;
 }
-
-    

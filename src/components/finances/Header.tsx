@@ -13,7 +13,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Download, Trash2 } from "lucide-react"
 import { useMemo } from "react";
@@ -86,17 +85,19 @@ export function Header({ currentDate, setCurrentDate, onExport, onOpenCleanDataM
               <DropdownMenuItem onClick={() => onExport('last5years')}>
                 Exportar Últimos 5 Años
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onOpenCleanDataModal} className="text-red-600 focus:text-red-700 focus:bg-red-50">
-                 <Trash2 className="mr-2 h-4 w-4" />
-                 Limpiar Datos
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="bg-white hover:bg-gray-200 text-red-500 rounded-full shadow-md transition-transform duration-200 transform hover:scale-105 border-0 h-9 w-9 sm:h-10 sm:w-10"
+            onClick={onOpenCleanDataModal}
+          >
+            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="sr-only">Limpiar Datos</span>
+          </Button>
         </div>
       </div>
     </header>
   );
 }
-
-    
