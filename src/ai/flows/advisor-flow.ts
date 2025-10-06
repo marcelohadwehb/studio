@@ -3,30 +3,11 @@
  * @fileOverview Flujo de IA para dar consejos financieros.
  *
  * - getFinancialAdvice - Función que obtiene el consejo financiero.
- * - FinancialSummary - El tipo de entrada para el resumen financiero.
- * - FinancialAdvice - El tipo de salida para el consejo financiero.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
-
-export const FinancialSummarySchema = z.object({
-    category: z.string().describe('La categoría principal del gasto (ej. "Fijos del hogar", "Alimentación").'),
-    subcategory: z.string().describe('La subcategoría específica del gasto (ej. "Dividendo", "Supermercado").'),
-    budgeted: z.number().describe('El monto presupuestado para esta subcategoría.'),
-    spent: z.number().describe('El monto gastado en esta subcategoría.'),
-    difference: z.number().describe('La diferencia entre lo presupuestado y lo gastado (presupuestado - gastado).'),
-});
-
-export type FinancialSummary = z.infer<typeof FinancialSummarySchema>;
-
-export const FinancialAdviceSchema = z.object({
-    analysis: z.string().describe('Un análisis general de la situación financiera basado en los datos proporcionados.'),
-    recommendations: z.array(z.string()).describe('Una lista de recomendaciones específicas y accionables para mejorar la salud financiera.'),
-});
-
-export type FinancialAdvice = z.infer<typeof FinancialAdviceSchema>;
-
+import { z } from 'zod';
+import { FinancialSummarySchema, FinancialAdviceSchema, type FinancialSummary, type FinancialAdvice } from './advisor-types';
 
 export async function getFinancialAdvice(summaries: FinancialSummary[]): Promise<FinancialAdvice> {
   return financialAdvisorFlow(summaries);

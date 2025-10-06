@@ -8,7 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 import type { Transaction, Categories, Budgets } from '@/lib/types';
-import { getFinancialAdvice, FinancialSummary } from '@/ai/flows/advisor-flow';
+import { getFinancialAdvice } from '@/ai/flows/advisor-flow';
+import type { FinancialSummary } from '@/ai/flows/advisor-types';
 
 
 interface AIAdvisorModalProps {
