@@ -65,7 +65,7 @@ export function TransactionList({ transactions, loading, onEdit, onDelete, forma
           sortedTransactions.map(t => (
             <div key={t.id} className={`p-3 sm:p-4 rounded-lg shadow-sm flex items-center justify-between gap-2 ${t.type === 'income' ? 'bg-green-50' : 'bg-red-50'}`}>
               <div className="flex-1 overflow-hidden">
-                <p className="font-semibold text-gray-800 capitalize truncate text-sm sm:text-base">{t.description || t.subcategory}</p>
+                <p className="font-semibold text-gray-800 capitalize truncate text-sm sm:text-base">{t.type === 'income' ? t.description : t.subcategory}</p>
                 <p className="text-xs text-gray-500 capitalize">{format(new Date(t.timestamp), "d 'de' MMMM, yyyy", { locale: es })}</p>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 text-right">

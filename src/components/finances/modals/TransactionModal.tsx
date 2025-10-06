@@ -93,21 +93,24 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
   }, [selectedCategory, form, type, transaction, sortedSubcategories]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const data = {
+    const commonData = {
       type,
       amount: parseFormattedNumber(values.amount),
       date: format(values.date, 'yyyy-MM-dd'),
       timestamp: values.date.getTime(),
-      ...(type === 'income' ? { description: values.description } : { category: values.category, subcategory: values.subcategory, description: values.subcategory })
     };
+  
+    const transactionData = type === 'income' 
+      ? { ...commonData, description: values.description || 'Ingreso' }
+      : { ...commonData, category: values.category, subcategory: values.subcategory, description: values.subcategory };
 
     try {
       if (isEditing) {
         const transRef = doc(db, "artifacts", appId, "public", "data", "transactions", transaction.id);
-        await updateDoc(transRef, data);
+        await updateDoc(transRef, transactionData);
         toast({ title: 'Éxito', description: 'Transacción actualizada correctamente.' });
       } else {
-        await addDoc(collection(db, "artifacts", appId, "public", "data", "transactions"), data);
+        await addDoc(collection(db, "artifacts", appId, "public", "data", "transactions"), transactionData);
         toast({ title: 'Éxito', description: 'Transacción agregada correctamente.' });
       }
       onClose();

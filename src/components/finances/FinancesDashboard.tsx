@@ -422,5 +422,3 @@ export function FinancesDashboard() {
     </div>
   );
 }
-
-    
