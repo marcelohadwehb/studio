@@ -19,11 +19,12 @@ import { CategoriesModal } from './modals/CategoriesModal';
 import { RecordsModal } from './modals/RecordsModal';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { PinScreen } from './PinScreen';
+import { CleanDataModal } from './modals/CleanDataModal';
+
 
 const appId = 'default-app-id';
 
 export function FinancesDashboard() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Categories>({});
   const [budgets, setBudgets] = useState<Budgets>({});
@@ -109,42 +110,36 @@ export function FinancesDashboard() {
     const allTransQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
     unsubscribes.push(onSnapshot(allTransQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Transaction[];
-        setAllTransactions(data);
+        // Filter out test data
+        const filteredData = data.filter(t => !t.description?.toLowerCase().includes('prueba'));
+        setAllTransactions(filteredData);
         setLoading(false);
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [authStatus, isUnlocked]);
 
-  useEffect(() => {
+  const transactionsForCurrentMonth = useMemo(() => {
     const startOfMonth = new Date(currentYear, currentMonth, 1).getTime();
     const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).getTime();
-
-    const monthlyTransactions = allTransactions.filter(t => t.timestamp >= startOfMonth && t.timestamp <= endOfMonth);
-    setTransactions(monthlyTransactions);
-    
+    return allTransactions.filter(t => t.timestamp >= startOfMonth && t.timestamp <= endOfMonth);
   }, [allTransactions, currentMonth, currentYear]);
 
   const { totalIncome, totalExpenses, balance } = useMemo(() => {
-    const monthFilteredTransactions = transactions.filter(t => {
-      const transDate = new Date(t.timestamp);
-      return transDate.getMonth() === currentMonth && transDate.getFullYear() === currentYear;
-    });
-
-    return monthFilteredTransactions.reduce((acc, t) => {
+    return transactionsForCurrentMonth.reduce((acc, t) => {
       if (t.type === 'income') acc.totalIncome += t.amount;
       else acc.totalExpenses += t.amount;
       acc.balance = acc.totalIncome - acc.totalExpenses;
       return acc;
     }, { totalIncome: 0, totalExpenses: 0, balance: 0 });
-  }, [transactions, currentMonth, currentYear]);
+  }, [transactionsForCurrentMonth]);
   
   const filteredTransactions = useMemo(() => {
     if (transactionFilter === 'all') {
-      return transactions;
+      return transactionsForCurrentMonth;
     }
-    return transactions.filter(t => t.type === transactionFilter);
-  }, [transactions, transactionFilter]);
+    return transactionsForCurrentMonth.filter(t => t.type === transactionFilter);
+  }, [transactionsForCurrentMonth, transactionFilter]);
 
   const handleOpenModal = useCallback((type: ModalState['type'], transactionToEdit: Transaction | null = null) => {
     setModalState({ type, transactionToEdit });
@@ -180,27 +175,33 @@ export function FinancesDashboard() {
     let fileName = `Finanzas-Familiares`;
     const now = new Date();
 
+    const fetchAllTransactions = async () => {
+        const transQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
+        const querySnapshot = await getDocs(transQuery);
+        return querySnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Transaction))
+          .filter(t => !t.description?.toLowerCase().includes('prueba'));
+    };
+
+    const allDbTransactions = await fetchAllTransactions();
+
     if (exportType === 'month') {
-        transToExport = transactions;
+        const startOfMonth = new Date(currentYear, currentMonth, 1).getTime();
+        const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).getTime();
+        transToExport = allDbTransactions.filter(t => t.timestamp >= startOfMonth && t.timestamp <= endOfMonth);
         const monthName = currentDate.toLocaleString('es-CL', { month: 'long' });
         fileName += `-${monthName}-${currentYear}.csv`;
     } else {
-        let start: Date | null = null;
-        let end: Date | null = null;
-
+        let start: Date;
         if (exportType === 'year') {
             start = new Date(currentYear, 0, 1);
-            end = new Date(currentYear, 11, 31, 23, 59, 59);
             fileName += `-Año-${currentYear}.csv`;
-        } else if (exportType === 'last5years') {
-            start = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
-            end = now;
+        } else { // last5years
+            start = new Date(now.getFullYear() - 5, 0, 1);
             fileName += `-Ultimos-5-Años.csv`;
         }
-        
-        if (start && end) {
-          transToExport = allTransactions.filter(t => t.timestamp >= start!.getTime() && t.timestamp <= end!.getTime());
-        }
+        const end = new Date(); // up to now
+        transToExport = allDbTransactions.filter(t => t.timestamp >= start.getTime() && t.timestamp <= end.getTime());
     }
     
     const recordsSnapshot = await getDocs(collection(db, "artifacts", appId, "public", "data", "records"));
@@ -222,8 +223,14 @@ export function FinancesDashboard() {
 
     const recordsHeaders = ["Registro", "Descripción", "Monto"];
     const recordsRows = allRecords.flatMap(record => {
-      const entries: { description: string, amount: number }[] = JSON.parse(record.entries);
-      return entries.map(entry => [record.name, `"${entry.description}"`, entry.amount.toString()]);
+      if (!record.entries) return [];
+      try {
+        const entries: { description: string, amount: number }[] = JSON.parse(record.entries);
+        return entries.map(entry => [record.name, `"${entry.description}"`, entry.amount.toString()]);
+      } catch (e) {
+        console.error("Error parsing record entries", e);
+        return [];
+      }
     });
 
     const csvContent = "\uFEFF" + "TRANSACCIONES\n" + toCsv(transHeaders, transRows) + "\n\nREGISTROS\n" + toCsv(recordsHeaders, recordsRows);
@@ -238,7 +245,38 @@ export function FinancesDashboard() {
     document.body.removeChild(link);
 
     toast({ title: "¡Archivo exportado!" });
-  }, [transactions, allTransactions, currentYear, currentDate, toast]);
+  }, [currentMonth, currentYear, currentDate, toast]);
+  
+  const handleCleanData = async (year: number) => {
+    setConfirmDialog({
+      open: true,
+      message: `¿Estás 100% seguro de que quieres eliminar TODAS las transacciones del año ${year}? Esta acción es irreversible.`,
+      onConfirm: async () => {
+        toast({ title: 'Limpiando datos...' });
+        const startOfYear = new Date(year, 0, 1).getTime();
+        const endOfYear = new Date(year, 11, 31, 23, 59, 59).getTime();
+
+        const transQuery = query(
+          collection(db, "artifacts", appId, "public", "data", "transactions"),
+          where("timestamp", ">=", startOfYear),
+          where("timestamp", "<=", endOfYear)
+        );
+
+        const snapshot = await getDocs(transQuery);
+        const deletePromises: Promise<void>[] = [];
+        snapshot.forEach(doc => {
+          deletePromises.push(deleteDoc(doc.ref));
+        });
+
+        await Promise.all(deletePromises);
+        
+        toast({ title: `¡Transacciones del año ${year} eliminadas!` });
+        setConfirmDialog({ open: false, onConfirm: () => {}, message: '' });
+        handleCloseModal();
+      }
+    });
+  };
+
 
   if (!isUnlocked) {
     return <PinScreen onUnlock={() => setIsUnlocked(true)} />;
@@ -271,6 +309,7 @@ export function FinancesDashboard() {
         currentDate={currentDate} 
         setCurrentDate={setCurrentDate} 
         onExport={handleExport}
+        onOpenCleanDataModal={() => handleOpenModal('cleanData')}
       />
       
       <main className="p-4 sm:p-6">
@@ -312,7 +351,7 @@ export function FinancesDashboard() {
               onClose={handleCloseModal}
               categories={categories}
               budgets={budgets}
-              transactions={transactions}
+              transactions={transactionsForCurrentMonth}
               appId={appId}
               formatCurrency={formatCurrency}
             />
@@ -334,6 +373,13 @@ export function FinancesDashboard() {
               formatCurrency={formatCurrency}
             />
           )}
+           {modalState.type === 'cleanData' && (
+            <CleanDataModal
+              isOpen={true}
+              onClose={handleCloseModal}
+              onClean={handleCleanData}
+            />
+          )}
         </>
       )}
 
@@ -350,3 +396,5 @@ export function FinancesDashboard() {
     </div>
   );
 }
+
+    

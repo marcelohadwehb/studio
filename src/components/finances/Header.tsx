@@ -13,17 +13,19 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { Download, Info } from "lucide-react"
+import { Download, Trash2 } from "lucide-react"
 import { useMemo } from "react";
 
 interface HeaderProps {
   currentDate: Date;
   setCurrentDate: (date: Date) => void;
   onExport: (exportType: 'month' | 'year' | 'last5years') => void;
+  onOpenCleanDataModal: () => void;
 }
 
-export function Header({ currentDate, setCurrentDate, onExport }: HeaderProps) {
+export function Header({ currentDate, setCurrentDate, onExport, onOpenCleanDataModal }: HeaderProps) {
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
 
@@ -38,7 +40,7 @@ export function Header({ currentDate, setCurrentDate, onExport }: HeaderProps) {
   };
 
   const months = useMemo(() => ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], []);
-  const years = useMemo(() => Array.from({ length: 37 }, (_, i) => 2024 + i), []);
+  const years = useMemo(() => Array.from({ length: 10 }, (_, i) => 2024 + i), []);
 
   return (
     <header className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-4 sm:p-6 rounded-t-2xl">
@@ -84,6 +86,11 @@ export function Header({ currentDate, setCurrentDate, onExport }: HeaderProps) {
               <DropdownMenuItem onClick={() => onExport('last5years')}>
                 Exportar Últimos 5 Años
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onOpenCleanDataModal} className="text-red-600 focus:text-red-700 focus:bg-red-50">
+                 <Trash2 className="mr-2 h-4 w-4" />
+                 Limpiar Datos
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -91,3 +98,5 @@ export function Header({ currentDate, setCurrentDate, onExport }: HeaderProps) {
     </header>
   );
 }
+
+    
