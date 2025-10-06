@@ -29,6 +29,6 @@ export interface RecordItem {
 }
 
 export interface ModalState {
-  type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'cleanData' | null;
+  type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'cleanData' | 'aiAdvisor' | null;
   transactionToEdit?: Transaction | null;
 }

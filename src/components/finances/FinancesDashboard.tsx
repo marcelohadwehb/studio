@@ -20,6 +20,7 @@ import { RecordsModal } from './modals/RecordsModal';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { PinScreen } from './PinScreen';
 import { CleanDataModal } from './modals/CleanDataModal';
+import { AIAdvisorModal } from './modals/AIAdvisorModal';
 
 
 const appId = 'default-app-id';
@@ -394,6 +395,15 @@ export function FinancesDashboard() {
               isOpen={true}
               onClose={handleCloseModal}
               onClean={handleCleanData}
+            />
+          )}
+          {modalState.type === 'aiAdvisor' && (
+            <AIAdvisorModal
+              isOpen={true}
+              onClose={handleCloseModal}
+              categories={categories}
+              budgets={budgets}
+              transactions={transactionsForCurrentMonth}
             />
           )}
         </>
