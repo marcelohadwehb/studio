@@ -17,19 +17,19 @@ const actionButtons: { id: 'income' | 'expense' | 'budgets' | 'records' | 'categ
 
 export function ActionButtons({ onOpenModal }: ActionButtonsProps) {
   return (
-    <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mb-6">
+    <section className="grid grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mb-6">
       {actionButtons.map(btn => (
         <Button
           key={btn.id}
           onClick={() => onOpenModal(btn.id)}
-          className={`font-semibold py-2 px-4 sm:px-6 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-sm sm:text-base ${btn.className}`}
+          className={`font-semibold py-2 px-3 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-xs sm:text-sm h-14 whitespace-normal ${btn.className}`}
         >
           {btn.label}
         </Button>
       ))}
       <Button
           onClick={() => onOpenModal('aiAdvisor')}
-          className="font-semibold py-2 px-4 sm:px-6 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-sm sm:text-base bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center gap-2"
+          className="font-semibold py-2 px-3 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-xs sm:text-sm bg-blue-500 hover:bg-blue-600 text-white flex flex-col items-center justify-center gap-1 h-14 whitespace-normal"
         >
           <BrainCircuit className="w-5 h-5" />
           <span>Asesor IA</span>
