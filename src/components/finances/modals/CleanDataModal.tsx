@@ -47,9 +47,9 @@ export function CleanDataModal({ isOpen, onClose, onClean }: CleanDataModalProps
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">Limpieza Inteligente de Datos</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center">Limpiar Transacciones por Período</DialogTitle>
            <DialogDescription className="text-center pt-2">
-            Esta acción eliminará permanentemente las transacciones y presupuestos temporales que existan exclusivamente dentro del rango de fechas seleccionado.
+            Esta acción eliminará permanentemente las transacciones dentro del rango de fechas seleccionado.
           </DialogDescription>
         </DialogHeader>
         
@@ -92,7 +92,7 @@ export function CleanDataModal({ isOpen, onClose, onClean }: CleanDataModalProps
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="button" variant="destructive" onClick={handleClean}>Eliminar Datos del Período</Button>
+          <Button type="button" variant="destructive" onClick={handleClean}>Eliminar Transacciones</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

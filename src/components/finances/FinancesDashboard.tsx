@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, auth, signIn } from '@/lib/firebase';
-import { collection, onSnapshot, doc, setDoc, query, where, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
-import type { Transaction, Categories, Budgets, RecordItem, ModalState, TemporaryBudgets, TemporaryCategories, TemporaryBudget } from '@/lib/types';
+import { collection, onSnapshot, doc, setDoc, query, where, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import type { Transaction, Categories, Budgets, RecordItem, ModalState, TemporaryBudgets, TemporaryCategories } from '@/lib/types';
 
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -252,7 +252,7 @@ export function FinancesDashboard() {
     });
 
     const budgetHeaders = ["Categoría", "Subcategoría", "Presupuesto", "Gastado", "Diferencial"];
-    const budgetsCsv = toCsv(budgetHeaders, budgetRows);
+    const budgetsCsv = toCsv(budgetHeaders, budgetsRows);
 
     // 3. Records CSV
     const recordsHeaders = ["Registro", "Descripción", "Monto"];
@@ -285,61 +285,16 @@ export function FinancesDashboard() {
     toast({ title: "¡Archivo exportado!" });
   }, [currentMonth, currentYear, currentDate, toast, allTransactions, records, budgets, tempBudgets, categories, tempCategories]);
   
-  const handleSmartCleanData = async (startDate: Date, endDate: Date) => {
+  const handleCleanData = async (startDate: Date, endDate: Date) => {
     setConfirmDialog({
       open: true,
-      message: `¿Estás seguro de que quieres eliminar las Transacciones y Presupuestos Temporales Exclusivos entre ${startDate.toLocaleDateString()} y ${endDate.toLocaleDateString()}? Esta acción es irreversible.`,
+      message: `¿Estás seguro de que quieres eliminar las transacciones entre ${startDate.toLocaleDateString()} y ${endDate.toLocaleDateString()}? Esta acción es irreversible.`,
       onConfirm: async () => {
-        toast({ title: 'Limpiando datos...' });
+        toast({ title: 'Limpiando transacciones...' });
         
         const startTime = startDate.getTime();
         const endTime = endDate.getTime();
-
-        // 1. Fetch current temporary budgets and categories
-        const tempBudgetsRef = doc(db, "artifacts", appId, "public", "data", "temp_budgets", "temp_budgets");
-        const tempCategoriesRef = doc(db, "artifacts", appId, "public", "data", "temp_categories", "temp_categories");
         
-        const [tempBudgetsSnap, tempCategoriesSnap] = await Promise.all([
-            getDoc(tempBudgetsRef),
-            getDoc(tempCategoriesRef)
-        ]);
-
-        const currentTempBudgets: TemporaryBudgets = tempBudgetsSnap.exists() ? tempBudgetsSnap.data() : {};
-        const currentTempCategories: TemporaryCategories = tempCategoriesSnap.exists() ? tempCategoriesSnap.data() : {};
-        
-        const updatedTempBudgets = { ...currentTempBudgets };
-        const updatedTempCategories = { ...currentTempCategories };
-        let budgetsModified = false;
-
-        // 2. Logic to determine which temporary budgets to delete
-        for (const subcat in currentTempBudgets) {
-            const budget = currentTempBudgets[subcat];
-            if (budget.from && budget.to && typeof budget.from.year === 'number') {
-                const fromDate = new Date(budget.from.year, budget.from.month, 1).getTime();
-                const toDate = new Date(budget.to.year, budget.to.month + 1, 0).getTime();
-                
-                if (fromDate >= startTime && toDate <= endTime) {
-                    // This budget is completely within the deletion range
-                    delete updatedTempBudgets[subcat];
-                    budgetsModified = true;
-
-                    // Remove subcategory from its category
-                    for (const cat in updatedTempCategories) {
-                        const index = updatedTempCategories[cat].indexOf(subcat);
-                        if (index > -1) {
-                            updatedTempCategories[cat].splice(index, 1);
-                            // If category becomes empty, remove it
-                            if (updatedTempCategories[cat].length === 0) {
-                                delete updatedTempCategories[cat];
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // 3. Delete Transactions in the date range
         const transQuery = query(
           collection(db, "artifacts", appId, "public", "data", "transactions"),
           where("timestamp", ">=", startTime),
@@ -348,32 +303,14 @@ export function FinancesDashboard() {
 
         const transSnapshot = await getDocs(transQuery);
         
-        const batchArray = [];
-        batchArray.push(writeBatch(db));
-        let operationCount = 0;
-        let batchIndex = 0;
-
-        transSnapshot.docs.forEach(doc => {
-            batchArray[batchIndex].delete(doc.ref);
-            operationCount++;
-
-            if (operationCount === 498) { // Leave room for 2 more ops
-                batchArray.push(writeBatch(db));
-                batchIndex++;
-                operationCount = 0;
-            }
-        });
-
-        // 4. Update temporary budgets and categories if modified
-        if (budgetsModified) {
-            batchArray[batchIndex].set(tempBudgetsRef, updatedTempBudgets);
-            batchArray[batchIndex].set(tempCategoriesRef, updatedTempCategories);
-        }
-
-        if (transSnapshot.empty && !budgetsModified) {
-            toast({ title: 'No hay datos para limpiar en el período seleccionado.', variant: 'default' });
+        if (transSnapshot.empty) {
+            toast({ title: 'No hay transacciones para limpiar en el período seleccionado.', variant: 'default' });
         } else {
-            await Promise.all(batchArray.map(batch => batch.commit()));
+            const batch = writeBatch(db);
+            transSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
             toast({ title: `¡Limpieza completada! ${transSnapshot.size} transacciones eliminadas.` });
         }
         
@@ -488,7 +425,7 @@ export function FinancesDashboard() {
             <CleanDataModal
               isOpen={true}
               onClose={handleCloseModal}
-              onClean={handleSmartCleanData}
+              onClean={handleCleanData}
             />
           )}
         </>
