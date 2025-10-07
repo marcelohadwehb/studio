@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isBefore, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import type { Transaction, Categories, Budgets, BudgetEntry, TemporaryBudget } from '@/lib/types';
@@ -23,7 +23,7 @@ import { formatNumber, parseFormattedNumber, cn } from '@/lib/utils';
 interface TempBudgetPopoverProps {
   subcategory: string;
   budgetEntry: BudgetEntry;
-  onSave: (subcategory: string, budgetEntry: BudgetEntry) => Promise<void>;
+  onSave: (subcategory: string, budgetEntry: BudgetEntry) => void;
   formatCurrency: (amount: number) => string;
 }
 
@@ -200,14 +200,18 @@ interface BudgetsModalProps {
   appId: string;
   formatCurrency: (amount: number) => string;
   currentDate: Date;
+  requestPin: () => Promise<boolean>;
 }
 
-export function BudgetsModal({ isOpen, onClose, categories, budgets, transactions, appId, formatCurrency, currentDate }: BudgetsModalProps) {
+export function BudgetsModal({ isOpen, onClose, categories, budgets, transactions, appId, formatCurrency, currentDate, requestPin }: BudgetsModalProps) {
   const [localBudgets, setLocalBudgets] = useState<Budgets>(budgets);
   const { toast } = useToast();
 
+  const isPastMonth = useMemo(() => {
+    return isBefore(currentDate, startOfMonth(startOfToday()));
+  }, [currentDate]);
+
   useEffect(() => {
-    // Deep copy to prevent modifying the original prop object, ensures modal has fresh data on open
     setLocalBudgets(JSON.parse(JSON.stringify(budgets)));
   }, [budgets, isOpen]);
 
@@ -221,7 +225,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
       }, {} as { [key: string]: number });
   }, [transactions]);
 
-  const getSubcategoryBudget = (subcat: string, date: Date): number => {
+  const getSubcategoryBudget = useCallback((subcat: string, date: Date): number => {
     const budgetEntry = localBudgets[subcat];
     if (!budgetEntry) return 0;
 
@@ -231,32 +235,47 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     );
 
     return activeTempBudget?.amount ?? budgetEntry.permanent ?? 0;
-  };
+  }, [localBudgets]);
 
-  const handlePermanentBudgetChange = (subcategory: string, value: string) => {
+  const handlePermanentBudgetChange = async (subcategory: string, value: string) => {
+    if (isPastMonth) {
+      const pinSuccess = await requestPin();
+      if (!pinSuccess) {
+        toast({ variant: 'destructive', title: 'PIN incorrecto', description: 'No se puede modificar un mes pasado sin el PIN correcto.' });
+        return;
+      }
+    }
+    
     const amount = parseFormattedNumber(value);
-    setLocalBudgets(prev => ({
-        ...prev,
+    const updatedBudgets = {
+        ...localBudgets,
         [subcategory]: {
-            ...(prev[subcategory] || { permanent: 0, temporaries: [] }),
+            ...(localBudgets[subcategory] || { permanent: 0, temporaries: [] }),
             permanent: amount
         }
-    }));
+    };
+    setLocalBudgets(updatedBudgets);
   };
 
-  const saveBudgetEntry = async (subcategory: string, budgetEntry: BudgetEntry) => {
+  const saveBudgetEntry = useCallback(async (subcategory: string, budgetEntry: BudgetEntry) => {
+    if (isPastMonth) {
+      const pinSuccess = await requestPin();
+      if (!pinSuccess) {
+        toast({ variant: 'destructive', title: 'PIN incorrecto', description: 'No se puede modificar un mes pasado sin el PIN correcto.' });
+        return;
+      }
+    }
+
     const finalBudgetEntry = {
       permanent: budgetEntry.permanent || 0,
       temporaries: budgetEntry.temporaries || []
     };
 
-    // 1. Update local state immediately for UI reactivity
     setLocalBudgets(prev => ({
       ...prev,
       [subcategory]: finalBudgetEntry
     }));
 
-    // 2. Save to Firestore
     try {
       const budgetsRef = doc(db, "artifacts", appId, "public", "data", "budgets", "budgets");
       await setDoc(budgetsRef, { [subcategory]: finalBudgetEntry }, { merge: true });
@@ -264,10 +283,9 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     } catch (error) {
       console.error("Error updating budget:", error);
       toast({ variant: 'destructive', title: 'Error al guardar' });
-      // Optional: Revert local state if save fails
-      setLocalBudgets(budgets);
+      setLocalBudgets(budgets); // Revert on failure
     }
-  };
+  }, [isPastMonth, requestPin, appId, budgets, toast]);
 
 
   return (
