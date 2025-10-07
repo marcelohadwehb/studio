@@ -385,6 +385,7 @@ export function FinancesDashboard() {
               isOpen={true}
               onClose={handleCloseModal}
               categories={categories}
+              tempCategories={tempCategories}
               appId={appId}
             />
           )}

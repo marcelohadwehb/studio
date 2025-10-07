@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { PlusCircle, Trash2, Edit, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '../ConfirmationDialog';
 
-import type { Categories } from '@/lib/types';
+import type { Categories, TemporaryCategories } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -17,10 +19,12 @@ interface CategoriesModalProps {
   isOpen: boolean;
   onClose: () => void;
   categories: Categories;
+  tempCategories: TemporaryCategories;
   appId: string;
 }
 
-export function CategoriesModal({ isOpen, onClose, categories, appId }: CategoriesModalProps) {
+export function CategoriesModal({ isOpen, onClose, categories, tempCategories, appId }: CategoriesModalProps) {
+  const [categoryType, setCategoryType] = useState<'permanent' | 'temporary'>('permanent');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newSubcategory, setNewSubcategory] = useState<{ [key: string]: string }>({});
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, onConfirm: () => void, message: string }>({ open: false, onConfirm: () => {}, message: '' });
@@ -30,9 +34,14 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
 
   const { toast } = useToast();
 
-  const saveCategories = async (updatedCategories: Categories) => {
+  const currentCategories = categoryType === 'permanent' ? categories : tempCategories;
+
+  const saveCategories = async (updatedCategories: Categories | TemporaryCategories) => {
     try {
-      const categoriesRef = doc(db, "artifacts", appId, "public", "data", "categories", "categories");
+      const docId = categoryType === 'permanent' ? 'categories' : 'temp_categories';
+      const collectionPath = categoryType === 'permanent' ? 'categories' : 'temp_categories';
+      
+      const categoriesRef = doc(db, "artifacts", appId, "public", "data", collectionPath, docId);
       await setDoc(categoriesRef, updatedCategories);
       toast({ title: 'Categorías guardadas.' });
     } catch (error) {
@@ -42,8 +51,8 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
   };
 
   const handleAddCategory = () => {
-    if (newCategoryName.trim() && !categories[newCategoryName.trim()]) {
-      const updated = { ...categories, [newCategoryName.trim()]: [] };
+    if (newCategoryName.trim() && !currentCategories[newCategoryName.trim()]) {
+      const updated = { ...currentCategories, [newCategoryName.trim()]: [] };
       saveCategories(updated);
       setNewCategoryName('');
     }
@@ -56,7 +65,13 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
     }
 
     const { oldName, newName } = editingCategory;
-    const updatedCategories = { ...categories };
+    
+    const updatedCategories = { ...currentCategories };
+    if (updatedCategories[newName] !== undefined) {
+      toast({ variant: 'destructive', title: 'Error', description: 'La categoría ya existe.'});
+      return;
+    }
+
     updatedCategories[newName] = updatedCategories[oldName];
     delete updatedCategories[oldName];
     
@@ -69,7 +84,7 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
       open: true,
       message: `¿Seguro que quieres eliminar la categoría "${catName}" y todas sus subcategorías?`,
       onConfirm: () => {
-        const updated = { ...categories };
+        const updated = { ...currentCategories };
         delete updated[catName];
         saveCategories(updated);
         setConfirmDialog({ open: false, onConfirm: () => {}, message: '' });
@@ -79,15 +94,15 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
 
   const handleAddSubcategory = (catName: string) => {
     const subcatName = newSubcategory[catName]?.trim();
-    if (subcatName && !categories[catName].includes(subcatName)) {
-      const updated = { ...categories, [catName]: [...categories[catName], subcatName] };
+    if (subcatName && !currentCategories[catName].includes(subcatName)) {
+      const updated = { ...currentCategories, [catName]: [...currentCategories[catName], subcatName] };
       saveCategories(updated);
       setNewSubcategory(prev => ({ ...prev, [catName]: '' }));
     }
   };
   
   const handleDeleteSubcategory = (catName: string, subcatName: string) => {
-    const updated = { ...categories, [catName]: categories[catName].filter(s => s !== subcatName) };
+    const updated = { ...currentCategories, [catName]: currentCategories[catName].filter(s => s !== subcatName) };
     saveCategories(updated);
   };
   
@@ -98,10 +113,16 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
     }
     
     const { category, oldName, newName } = editingSubcategory;
-    const subcategories = categories[category];
+    const subcategories = currentCategories[category];
+
+    if (subcategories.includes(newName)) {
+      toast({ variant: 'destructive', title: 'Error', description: 'La subcategoría ya existe.'});
+      return;
+    }
+
     const updatedSubcategories = subcategories.map(s => s === oldName ? newName : s);
     
-    const updatedCategories = { ...categories, [category]: updatedSubcategories };
+    const updatedCategories = { ...currentCategories, [category]: updatedSubcategories };
     saveCategories(updatedCategories);
     setEditingSubcategory(null);
   };
@@ -120,6 +141,21 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
             <DialogTitle className="text-2xl font-bold text-center">Gestión de Categorías</DialogTitle>
           </DialogHeader>
 
+          <RadioGroup
+            defaultValue="permanent"
+            onValueChange={(value: 'permanent' | 'temporary') => setCategoryType(value)}
+            className="flex justify-center gap-4 my-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="permanent" id="r-permanent" />
+              <Label htmlFor="r-permanent">Presupuesto Permanente</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="temporary" id="r-temporary" />
+              <Label htmlFor="r-temporary">Presupuesto Temporal</Label>
+            </div>
+          </RadioGroup>
+
           <div className="flex gap-2 my-4">
             <Input
               placeholder="Nueva categoría"
@@ -131,7 +167,7 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
 
           <div className="max-h-[50vh] overflow-y-auto pr-2">
             <Accordion type="multiple" className="w-full">
-              {Object.keys(categories).sort((a, b) => a.localeCompare(b)).map(cat => (
+              {Object.keys(currentCategories).sort((a, b) => a.localeCompare(b)).map(cat => (
                 <AccordionItem value={cat} key={cat}>
                   <AccordionTrigger>
                     <div className="flex justify-between items-center w-full">
@@ -163,7 +199,7 @@ export function CategoriesModal({ isOpen, onClose, categories, appId }: Categori
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pl-4 space-y-2">
-                    {categories[cat].sort((a, b) => a.localeCompare(b)).map(subcat => (
+                    {currentCategories[cat].sort((a, b) => a.localeCompare(b)).map(subcat => (
                       <div key={subcat} className="flex items-center justify-between text-sm">
                          {editingSubcategory?.oldName === subcat && editingSubcategory?.category === cat ? (
                            <div className="flex gap-2 items-center flex-grow" onClick={(e) => e.stopPropagation()}>

@@ -5,14 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Calendar as CalendarIcon, PlusCircle, Trash2, Edit } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Save, PlusCircle, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Transaction, TemporaryBudget, TemporaryBudgets, TemporaryCategories } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatNumber, parseFormattedNumber } from '@/lib/utils';
-import { TemporaryBudgetsCategoriesModal } from './TemporaryBudgetsCategoriesModal';
 
 
 interface TemporaryBudgetsProps {
@@ -31,7 +29,6 @@ const years = Array.from({ length: 10 }, (_, i) => currentYear + i);
 
 export function TemporaryBudgets({ appId, formatCurrency, currentDate, transactions, tempBudgets, tempCategories }: TemporaryBudgetsProps) {
   const [localBudgets, setLocalBudgets] = useState<TemporaryBudgets>({});
-  const [isCategoriesModalOpen, setCategoriesModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -129,12 +126,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setCategoriesModalOpen(true)}>
-          <Edit className="mr-2 h-4 w-4" />
-          Gestionar Categorías Temporales
-        </Button>
-      </div>
       <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 my-4">
         {Object.keys(tempCategories).sort((a,b) => a.localeCompare(b)).map(cat => {
           const sortedSubcategories = [...tempCategories[cat]].sort((a,b) => a.localeCompare(b));
@@ -233,13 +224,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
               Guardar Presupuestos Temporales
           </Button>
       </div>
-
-      <TemporaryBudgetsCategoriesModal
-        isOpen={isCategoriesModalOpen}
-        onClose={() => setCategoriesModalOpen(false)}
-        categories={tempCategories}
-        appId={appId}
-      />
     </>
   );
 }
