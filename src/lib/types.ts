@@ -13,20 +13,8 @@ export interface Categories {
   [category: string]: string[];
 }
 
-export interface TemporaryBudget {
-  id: string;
-  startDate: number; // timestamp
-  endDate: number; // timestamp
-  amount: number;
-}
-
-export interface BudgetEntry {
-  permanent: number;
-  temporaries?: TemporaryBudget[];
-}
-
 export interface Budgets {
-  [subcategory:string]: BudgetEntry;
+  [subcategory: string]: number;
 }
 
 export interface RecordEntry {

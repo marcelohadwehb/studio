@@ -20,7 +20,6 @@ import { RecordsModal } from './modals/RecordsModal';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { PinScreen } from './PinScreen';
 import { CleanDataModal } from './modals/CleanDataModal';
-import { PinPromptModal } from './modals/PinPromptModal';
 
 
 const appId = 'default-app-id';
@@ -40,7 +39,6 @@ export function FinancesDashboard() {
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, onConfirm: () => void, message: string }>({ open: false, onConfirm: () => {}, message: '' });
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'income' | 'expense'>('all');
-  const [pinPrompt, setPinPrompt] = useState<{ open: boolean, resolve: (value: boolean) => void } | null>(null);
 
   const { toast } = useToast();
 
@@ -81,21 +79,6 @@ export function FinancesDashboard() {
           setData(data);
         } else {
           const data = snapshot.exists() ? snapshot.data() : {};
-          if (coll === 'budgets' && data) {
-            Object.keys(data).forEach(key => {
-              if (typeof data[key] !== 'object' || data[key] === null) {
-                  // If the budget for a subcategory is not an object, initialize it correctly.
-                  data[key] = { permanent: Number(data[key]) || 0, temporaries: [] };
-              } else {
-                  if (data[key].temporaries === undefined) {
-                      data[key].temporaries = [];
-                  }
-                  if (data[key].permanent === undefined) {
-                      data[key].permanent = 0;
-                  }
-              }
-            });
-          }
           setData(data);
         }
       });
@@ -178,20 +161,6 @@ export function FinancesDashboard() {
   const formatCurrency = (amount: number) => {
     return `$ ${new Intl.NumberFormat('es-CL').format(Math.trunc(amount))}`;
   };
-
-  const requestPin = useCallback((): Promise<boolean> => {
-    return new Promise(resolve => {
-      setPinPrompt({ open: true, resolve });
-    });
-  }, []);
-
-  const handlePinPromptClose = (success: boolean) => {
-    if (pinPrompt) {
-      pinPrompt.resolve(success);
-    }
-    setPinPrompt(null);
-  };
-
 
   const handleExport = useCallback(async (exportType: 'month' | 'year' | 'last5years') => {
     toast({ title: `Exportando...` });
@@ -403,7 +372,6 @@ export function FinancesDashboard() {
               appId={appId}
               formatCurrency={formatCurrency}
               currentDate={currentDate}
-              requestPin={requestPin}
             />
           )}
           {modalState.type === 'categories' && (
@@ -431,13 +399,6 @@ export function FinancesDashboard() {
             />
           )}
         </>
-      )}
-
-      {pinPrompt && (
-        <PinPromptModal
-          isOpen={pinPrompt.open}
-          onClose={handlePinPromptClose}
-        />
       )}
 
       <ConfirmationDialog
