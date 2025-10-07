@@ -261,11 +261,8 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
   const handlePermanentBudgetChange = async (subcategory: string, value: string) => {
     const isEditingDisabled = isPastMonth && pastDateLock;
     if (isEditingDisabled) {
-      const pinSuccess = await requestPin();
-      if (!pinSuccess) {
-        toast({ variant: 'destructive', title: 'Acción cancelada', description: 'PIN incorrecto.' });
-        return;
-      }
+      toast({ variant: 'destructive', title: 'Acción bloqueada', description: 'Desbloquea la edición para modificar meses pasados.' });
+      return;
     }
     const amount = parseFormattedNumber(value);
     const updatedBudgetEntry = {
@@ -381,14 +378,11 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                           <div className="col-span-1 flex items-center gap-1 relative">
                             <Input
                               id={`budget-${subcat}`}
-                              value={formatNumber(activeTempBudget ? activeTempBudget.amount : subcatPermBudget)}
-                              onChange={(e) => {
-                                // This is a read-only representation if a temp budget is active.
-                                // Permanent budget changes are handled via onBlur.
-                              }}
+                              value={formatNumber(subcatBudget)}
                               onBlur={(e) => handlePermanentBudgetChange(subcat, e.target.value)}
                               readOnly={isEditingDisabled || !!activeTempBudget}
-                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50", (isEditingDisabled || !!activeTempBudget) && "cursor-not-allowed bg-gray-100")}
+                              onChange={() => {}} // Dummy onChange to prevent React warning on readOnly inputs
+                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50", (isEditingDisabled) && "cursor-not-allowed bg-gray-100")}
                               placeholder="0"
                               title={activeTempBudget ? `Temporal activo: ${formatCurrency(activeTempBudget.amount)} | Permanente: ${formatCurrency(subcatPermBudget)}` : `Permanente: ${formatCurrency(subcatPermBudget)}`}
                             />
@@ -404,7 +398,6 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
 
                            <div className="flex items-center gap-1">
                              <span className={`font-medium w-20 text-right ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</span>
-                             {/* Save button removed as changes are more direct now */}
                            </div>
                         </div>
                       )
@@ -423,5 +416,3 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
-
-    
