@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,18 +66,20 @@ export function CategoriesModal({ isOpen, onClose, categories, tempCategories, a
 
     const { oldName, newName } = editingCategory;
     
-    const updatedCategories = { ...currentCategories };
+    const updatedCategories: Categories | TemporaryCategories = { ...currentCategories };
     if (updatedCategories[newName] !== undefined) {
       toast({ variant: 'destructive', title: 'Error', description: 'La categoría ya existe.'});
       return;
     }
-
+    
+    // Create new, copy subcategories, delete old
     updatedCategories[newName] = updatedCategories[oldName];
     delete updatedCategories[oldName];
     
     saveCategories(updatedCategories);
     setEditingCategory(null);
   };
+
 
   const handleDeleteCategory = (catName: string) => {
     setConfirmDialog({
@@ -161,6 +163,7 @@ export function CategoriesModal({ isOpen, onClose, categories, tempCategories, a
               placeholder="Nueva categoría"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
             />
             <Button onClick={handleAddCategory}>Agregar</Button>
           </div>
@@ -176,6 +179,7 @@ export function CategoriesModal({ isOpen, onClose, categories, tempCategories, a
                           <Input
                             value={editingCategory.newName}
                             onChange={(e) => setEditingCategory({ ...editingCategory, newName: e.target.value })}
+                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateCategoryName()}
                             className="h-8"
                           />
                           <Button size="icon" className="h-8 w-8" onClick={handleUpdateCategoryName}><Save className="h-4 w-4"/></Button>
@@ -206,6 +210,7 @@ export function CategoriesModal({ isOpen, onClose, categories, tempCategories, a
                              <Input
                                 value={editingSubcategory.newName}
                                 onChange={(e) => setEditingSubcategory({ ...editingSubcategory, newName: e.target.value })}
+                                onKeyDown={(e) => e.key === 'Enter' && handleUpdateSubcategoryName()}
                                 className="h-8"
                              />
                              <Button size="icon" className="h-8 w-8" onClick={handleUpdateSubcategoryName}><Save className="h-4 w-4"/></Button>
@@ -232,6 +237,7 @@ export function CategoriesModal({ isOpen, onClose, categories, tempCategories, a
                         className="h-8"
                         value={newSubcategory[cat] || ''}
                         onChange={(e) => setNewSubcategory(prev => ({...prev, [cat]: e.target.value}))}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddSubcategory(cat)}
                       />
                       <Button size="icon" className="h-8 w-8" onClick={() => handleAddSubcategory(cat)}>
                         <PlusCircle className="h-4 w-4" />
