@@ -39,7 +39,7 @@ export function Header({ currentDate, setCurrentDate, onExport, onOpenCleanDataM
   };
 
   const months = useMemo(() => ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], []);
-  const years = useMemo(() => Array.from({ length: 10 }, (_, i) => 2024 + i), []);
+  const years = useMemo(() => Array.from({ length: 37 }, (_, i) => 2024 + i), []);
 
   return (
     <header className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-4 sm:p-6 rounded-t-2xl">
