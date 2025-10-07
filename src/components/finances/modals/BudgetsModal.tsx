@@ -23,11 +23,12 @@ import { formatNumber, parseFormattedNumber, cn } from '@/lib/utils';
 interface TempBudgetPopoverProps {
   subcategory: string;
   budgetEntry: BudgetEntry;
-  onSave: (subcategory: string, budgetEntry: BudgetEntry) => void;
+  onSave: (subcategory: string, budgetEntry: BudgetEntry) => Promise<void>;
   formatCurrency: (amount: number) => string;
+  isPastMonth: boolean;
 }
 
-function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency }: TempBudgetPopoverProps) {
+function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, isPastMonth }: TempBudgetPopoverProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [amount, setAmount] = useState('0');
   const [editingTemp, setEditingTemp] = useState<TemporaryBudget | null>(null);
@@ -92,7 +93,7 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency }:
   return (
     <Popover onOpenChange={(isOpen) => !isOpen && resetForm()}>
       <PopoverTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8 absolute right-0">
+        <Button size="icon" variant="ghost" className="h-8 w-8 absolute right-0" disabled={isPastMonth}>
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
@@ -349,9 +350,10 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                           <div className="col-span-1 flex items-center gap-1 relative">
                             <Input
                               id={`budget-${subcat}`}
-                              value={formatNumber(subcatPermBudget)}
+                              value={formatNumber(activeTempBudget?.amount ?? subcatPermBudget)}
                               onChange={(e) => handlePermanentBudgetChange(subcat, e.target.value)}
-                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50")}
+                              readOnly={isPastMonth && !activeTempBudget}
+                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50", isPastMonth && "cursor-not-allowed")}
                               placeholder="0"
                               title={activeTempBudget ? `Temporal activo: ${formatCurrency(activeTempBudget.amount)} | Permanente: ${formatCurrency(subcatPermBudget)}` : `Permanente: ${formatCurrency(subcatPermBudget)}`}
                             />
@@ -361,12 +363,13 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                                 budgetEntry={subcatBudgetEntry}
                                 onSave={saveBudgetEntry}
                                 formatCurrency={formatCurrency}
+                                isPastMonth={isPastMonth}
                              />
                           </div>
 
                            <div className="flex items-center gap-1">
                              <span className={`font-medium w-20 text-right ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</span>
-                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveBudgetEntry(subcat, localBudgets[subcat])}>
+                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveBudgetEntry(subcat, localBudgets[subcat])} disabled={isPastMonth}>
                                 <Save className="h-4 w-4" />
                              </Button>
                            </div>
@@ -387,3 +390,5 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
+
+    
