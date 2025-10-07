@@ -33,3 +33,19 @@ export interface ModalState {
   type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'cleanData' | null;
   transactionToEdit?: Transaction | null;
 }
+
+// ================== Temporary Budgets ==================
+
+export interface TemporaryBudget {
+  amount: number;
+  from: { month: number; year: number }; // month is 0-indexed
+  to: { month: number; year: number };
+}
+
+export interface TemporaryBudgets {
+  [subcategory: string]: TemporaryBudget[];
+}
+
+export interface TemporaryCategories {
+  [category: string]: string[];
+}

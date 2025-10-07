@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, auth, signIn } from '@/lib/firebase';
 import { collection, onSnapshot, doc, setDoc, query, where, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import type { Transaction, Categories, Budgets, RecordItem, ModalState } from '@/lib/types';
+import type { Transaction, Categories, Budgets, RecordItem, ModalState, TemporaryBudgets, TemporaryCategories } from '@/lib/types';
 
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,6 +29,8 @@ export function FinancesDashboard() {
   const [categories, setCategories] = useState<Categories>({});
   const [budgets, setBudgets] = useState<Budgets>({});
   const [records, setRecords] = useState<RecordItem[]>([]);
+  const [tempCategories, setTempCategories] = useState<TemporaryCategories>({});
+  const [tempBudgets, setTempBudgets] = useState<TemporaryBudgets>({});
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -107,6 +109,8 @@ export function FinancesDashboard() {
     
     setupListener("budgets", "budgets", setBudgets);
     setupListener("records", null, setRecords);
+    setupListener("temp_budgets", "temp_budgets", setTempBudgets);
+    setupListener("temp_categories", "temp_categories", setTempCategories);
     
     const allTransQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
     unsubscribes.push(onSnapshot(allTransQuery, (snapshot) => {
@@ -372,6 +376,8 @@ export function FinancesDashboard() {
               appId={appId}
               formatCurrency={formatCurrency}
               currentDate={currentDate}
+              tempBudgets={tempBudgets}
+              tempCategories={tempCategories}
             />
           )}
           {modalState.type === 'categories' && (
