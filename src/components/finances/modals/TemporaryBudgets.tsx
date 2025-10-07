@@ -61,7 +61,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     const year = currentDate.getFullYear();
     const budget = localBudgets[subcategory];
 
-    if (!budget) return null;
+    if (!budget || !budget.from || !budget.to) return null;
 
     const currentMonthDate = new Date(year, month, 1);
     const fromDate = new Date(budget.from.year, budget.from.month, 1);
