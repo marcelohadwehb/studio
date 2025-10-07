@@ -252,7 +252,7 @@ export function FinancesDashboard() {
     });
 
     const budgetHeaders = ["Categoría", "Subcategoría", "Presupuesto", "Gastado", "Diferencial"];
-    const budgetsCsv = toCsv(budgetHeaders, budgetsRows);
+    const budgetsCsv = toCsv(budgetHeaders, budgetRows);
 
     // 3. Records CSV
     const recordsHeaders = ["Registro", "Descripción", "Monto"];
