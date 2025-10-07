@@ -80,13 +80,17 @@ export function FinancesDashboard() {
         } else {
           const data = snapshot.exists() ? snapshot.data() : {};
           if (coll === 'budgets' && data) {
-            // Ensure budgets have the correct structure
             Object.keys(data).forEach(key => {
-              if (!data[key].temporaries) {
-                data[key].temporaries = [];
-              }
-              if (data[key].permanent === undefined) {
-                 data[key].permanent = 0;
+              if (typeof data[key] !== 'object' || data[key] === null) {
+                  // If the budget for a subcategory is not an object, initialize it correctly.
+                  data[key] = { permanent: Number(data[key]) || 0, temporaries: [] };
+              } else {
+                  if (data[key].temporaries === undefined) {
+                      data[key].temporaries = [];
+                  }
+                  if (data[key].permanent === undefined) {
+                      data[key].permanent = 0;
+                  }
               }
             });
           }

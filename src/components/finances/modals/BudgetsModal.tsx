@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { Save, Calendar as CalendarIcon, Trash2, Edit } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,26 +23,29 @@ import { formatNumber, parseFormattedNumber, cn } from '@/lib/utils';
 interface TempBudgetPopoverProps {
   subcategory: string;
   budgetEntry: BudgetEntry;
-  onSave: (subcategory: string, budgetEntry: BudgetEntry) => void;
+  onSave: (subcategory: string, budgetEntry: BudgetEntry) => Promise<void>;
   onUpdateTemp: (subcategory: string, temporaries: TemporaryBudget[]) => void;
+  formatCurrency: (amount: number) => string;
 }
 
-function TempBudgetPopover({ subcategory, budgetEntry, onSave, onUpdateTemp }: TempBudgetPopoverProps) {
+function TempBudgetPopover({ subcategory, budgetEntry, onSave, onUpdateTemp, formatCurrency }: TempBudgetPopoverProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [amount, setAmount] = useState('0');
   const [editingTemp, setEditingTemp] = useState<TemporaryBudget | null>(null);
 
   const handleSaveTempBudget = () => {
     if ((!dateRange?.from && !editingTemp) || parseFormattedNumber(amount) <= 0) {
+      toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, selecciona un rango de fechas y un monto mayor a cero.' });
       return;
     }
 
     let newTemporaries = [...(budgetEntry.temporaries || [])];
+    const newId = new Date().getTime().toString();
 
     if (editingTemp) {
       // Update existing
-      const from = dateRange?.from || editingTemp.startDate;
-      const to = dateRange?.to || editingTemp.endDate;
+      const from = dateRange?.from || new Date(editingTemp.startDate);
+      const to = dateRange?.to || new Date(editingTemp.endDate);
       newTemporaries = newTemporaries.map(t => 
         t.id === editingTemp.id 
           ? { ...t, startDate: startOfMonth(from).getTime(), endDate: endOfMonth(to || from).getTime(), amount: parseFormattedNumber(amount) }
@@ -51,19 +54,30 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, onUpdateTemp }: T
     } else {
       // Add new
        newTemporaries.push({
-        id: new Date().getTime().toString(),
+        id: newId,
         startDate: startOfMonth(dateRange!.from!).getTime(),
         endDate: endOfMonth(dateRange!.to || dateRange!.from!).getTime(),
         amount: parseFormattedNumber(amount)
       });
     }
+    
+    const updatedBudgetEntry = {
+        ...budgetEntry,
+        temporaries: newTemporaries
+    };
 
-    onUpdateTemp(subcategory, newTemporaries);
+    onSave(subcategory, updatedBudgetEntry); // This saves to firestore
+    onUpdateTemp(subcategory, newTemporaries); // This updates local state for immediate UI feedback
     resetForm();
   };
 
   const handleDeleteTempBudget = (tempId: string) => {
     const newTemporaries = (budgetEntry.temporaries || []).filter(t => t.id !== tempId);
+    const updatedBudgetEntry = {
+        ...budgetEntry,
+        temporaries: newTemporaries
+    };
+    onSave(subcategory, updatedBudgetEntry);
     onUpdateTemp(subcategory, newTemporaries);
   };
   
@@ -78,11 +92,6 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, onUpdateTemp }: T
     setDateRange(undefined);
     setAmount('0');
   };
-  
-  const handleSaveAndClose = () => {
-      handleSaveTempBudget();
-      onSave(subcategory, { ...budgetEntry, temporaries: budgetEntry.temporaries || [] });
-  }
 
   return (
     <Popover onOpenChange={(isOpen) => !isOpen && resetForm()}>
@@ -107,14 +116,14 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, onUpdateTemp }: T
                     {(budgetEntry.temporaries || []).map(t => (
                       <div key={t.id} className="text-xs flex justify-between items-center bg-muted p-1 rounded-md">
                         <div>
-                          <p className="font-semibold">{formatNumber(t.amount)}</p>
+                          <p className="font-semibold">{formatCurrency(t.amount)}</p>
                           <p>{format(new Date(t.startDate), 'MMM yyyy', {locale: es})} - {format(new Date(t.endDate), 'MMM yyyy', {locale: es})}</p>
                         </div>
                         <div className="flex">
                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditTempBudget(t)}>
-                              <CalendarIcon className="h-3 w-3" />
+                              <Edit className="h-3 w-3" />
                            </Button>
-                           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleDeleteTempBudget(t.id)}>
+                           <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => handleDeleteTempBudget(t.id)}>
                               <Trash2 className="h-3 w-3" />
                            </Button>
                         </div>
@@ -175,10 +184,8 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, onUpdateTemp }: T
               <div className="flex justify-end gap-2">
                 {editingTemp && <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>}
                 <Button size="sm" onClick={handleSaveTempBudget}>
-                  {editingTemp ? 'Actualizar' : 'Agregar'} Período
-                </Button>
-                 <Button size="sm" variant="outline" onClick={() => onSave(subcategory, { ...budgetEntry, temporaries: budgetEntry.temporaries || [] })}>
-                  <Save className="h-4 w-4 mr-2"/> Guardar Cambios
+                  <Save className="h-4 w-4 mr-2"/>
+                  {editingTemp ? 'Actualizar Período' : 'Guardar Período'}
                 </Button>
               </div>
           </div>
@@ -204,7 +211,6 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
   const { toast } = useToast();
   
   useEffect(() => {
-    // Deep copy to prevent mutation issues
     setLocalBudgets(JSON.parse(JSON.stringify(budgets)));
   }, [budgets, isOpen]);
 
@@ -224,7 +230,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
 
     const currentTime = date.getTime();
     const activeTempBudget = budgetEntry.temporaries?.find(t => 
-      currentTime >= startOfMonth(new Date(t.startDate)).getTime() && currentTime <= endOfMonth(new Date(t.endDate)).getTime()
+      currentTime >= t.startDate && currentTime <= t.endDate
     );
 
     return activeTempBudget?.amount ?? budgetEntry.permanent ?? 0;
@@ -312,7 +318,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                       
                       const currentTime = currentDate.getTime();
                       const activeTempBudget = subcatBudgetEntry.temporaries?.find(t => 
-                        currentTime >= startOfMonth(new Date(t.startDate)).getTime() && currentTime <= endOfMonth(new Date(t.endDate)).getTime()
+                        currentTime >= t.startDate && currentTime <= t.endDate
                       );
 
                       const subcatBudget = activeTempBudget?.amount ?? subcatPermBudget;
@@ -339,6 +345,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                                 budgetEntry={subcatBudgetEntry}
                                 onSave={saveBudgetEntry}
                                 onUpdateTemp={handleUpdateTempBudgets}
+                                formatCurrency={formatCurrency}
                              />
                           </div>
                            
@@ -365,5 +372,3 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
-
-    
