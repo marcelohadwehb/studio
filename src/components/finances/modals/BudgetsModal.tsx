@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Calendar as CalendarIcon, Trash2, Edit } from 'lucide-react';
+import { Save, Calendar as CalendarIcon, Trash2, Edit, Lock, Unlock } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
@@ -25,10 +25,10 @@ interface TempBudgetPopoverProps {
   budgetEntry: BudgetEntry;
   onSave: (subcategory: string, budgetEntry: BudgetEntry) => Promise<void>;
   formatCurrency: (amount: number) => string;
-  isPastMonth: boolean;
+  disabled: boolean;
 }
 
-function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, isPastMonth }: TempBudgetPopoverProps) {
+function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, disabled }: TempBudgetPopoverProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [amount, setAmount] = useState('0');
   const [editingTemp, setEditingTemp] = useState<TemporaryBudget | null>(null);
@@ -93,7 +93,7 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, i
   return (
     <Popover onOpenChange={(isOpen) => !isOpen && resetForm()}>
       <PopoverTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8 absolute right-0" disabled={isPastMonth}>
+        <Button size="icon" variant="ghost" className="h-8 w-8 absolute right-0" disabled={disabled}>
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
@@ -206,6 +206,7 @@ interface BudgetsModalProps {
 
 export function BudgetsModal({ isOpen, onClose, categories, budgets, transactions, appId, formatCurrency, currentDate, requestPin }: BudgetsModalProps) {
   const [localBudgets, setLocalBudgets] = useState<Budgets>(budgets);
+  const [pastDateLock, setPastDateLock] = useState(true);
   const { toast } = useToast();
 
   const isPastMonth = useMemo(() => {
@@ -213,8 +214,27 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
   }, [currentDate]);
 
   useEffect(() => {
-    setLocalBudgets(JSON.parse(JSON.stringify(budgets)));
+    if (isOpen) {
+      setLocalBudgets(JSON.parse(JSON.stringify(budgets)));
+      setPastDateLock(true); // Reset lock on open
+    }
   }, [budgets, isOpen]);
+  
+  const handleToggleLock = async () => {
+    if (!pastDateLock) {
+      setPastDateLock(true);
+      toast({ title: 'Edición de meses pasados bloqueada.' });
+      return;
+    }
+    const pinSuccess = await requestPin();
+    if (pinSuccess) {
+      setPastDateLock(false);
+      toast({ title: 'Edición de meses pasados desbloqueada.' });
+    } else {
+      toast({ variant: 'destructive', title: 'PIN incorrecto' });
+    }
+  };
+
 
   const expensesBySubcategory = useMemo(() => {
     return transactions
@@ -238,15 +258,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     return activeTempBudget?.amount ?? budgetEntry.permanent ?? 0;
   }, [localBudgets]);
 
-  const handlePermanentBudgetChange = async (subcategory: string, value: string) => {
-    if (isPastMonth) {
-      const pinSuccess = await requestPin();
-      if (!pinSuccess) {
-        toast({ variant: 'destructive', title: 'PIN incorrecto', description: 'No se puede modificar un mes pasado sin el PIN correcto.' });
-        return;
-      }
-    }
-    
+  const handlePermanentBudgetChange = (subcategory: string, value: string) => {
     const amount = parseFormattedNumber(value);
     const updatedBudgets = {
         ...localBudgets,
@@ -259,24 +271,18 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
   };
 
   const saveBudgetEntry = useCallback(async (subcategory: string, budgetEntry: BudgetEntry) => {
-    if (isPastMonth) {
-      const pinSuccess = await requestPin();
-      if (!pinSuccess) {
-        toast({ variant: 'destructive', title: 'PIN incorrecto', description: 'No se puede modificar un mes pasado sin el PIN correcto.' });
-        return;
-      }
-    }
-
     const finalBudgetEntry = {
       permanent: budgetEntry.permanent || 0,
       temporaries: budgetEntry.temporaries || []
     };
-
-    setLocalBudgets(prev => ({
-      ...prev,
+  
+    const updatedLocalBudgets = {
+      ...localBudgets,
       [subcategory]: finalBudgetEntry
-    }));
-
+    };
+  
+    setLocalBudgets(updatedLocalBudgets);
+  
     try {
       const budgetsRef = doc(db, "artifacts", appId, "public", "data", "budgets", "budgets");
       await setDoc(budgetsRef, { [subcategory]: finalBudgetEntry }, { merge: true });
@@ -284,16 +290,25 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     } catch (error) {
       console.error("Error updating budget:", error);
       toast({ variant: 'destructive', title: 'Error al guardar' });
-      setLocalBudgets(budgets); // Revert on failure
+      // Revert on failure by refetching or using the original state
+      setLocalBudgets(budgets); 
     }
-  }, [isPastMonth, requestPin, appId, budgets, toast]);
+  }, [appId, budgets, localBudgets, toast]);
 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">Gestión de Presupuestos</DialogTitle>
+          <div className="flex justify-between items-center">
+            <DialogTitle className="text-2xl font-bold text-center flex-1">Gestión de Presupuestos</DialogTitle>
+             {isPastMonth && (
+              <Button onClick={handleToggleLock} variant="ghost" size="icon" className="text-muted-foreground">
+                {pastDateLock ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5 text-primary" />}
+                <span className="sr-only">Desbloquear edición</span>
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 my-4">
@@ -341,6 +356,8 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                       const subcatBudget = activeTempBudget?.amount ?? subcatPermBudget;
                       const subcatDiff = subcatBudget - subcatSpent;
                       const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
+                      
+                      const isEditingDisabled = isPastMonth && pastDateLock;
 
                       return (
                         <div key={subcat} className="grid grid-cols-[1fr,1fr,1fr,auto] gap-4 items-center text-sm">
@@ -352,8 +369,8 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                               id={`budget-${subcat}`}
                               value={formatNumber(activeTempBudget?.amount ?? subcatPermBudget)}
                               onChange={(e) => handlePermanentBudgetChange(subcat, e.target.value)}
-                              readOnly={isPastMonth && !activeTempBudget}
-                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50", isPastMonth && "cursor-not-allowed")}
+                              readOnly={isEditingDisabled}
+                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50", isEditingDisabled && "cursor-not-allowed bg-gray-100")}
                               placeholder="0"
                               title={activeTempBudget ? `Temporal activo: ${formatCurrency(activeTempBudget.amount)} | Permanente: ${formatCurrency(subcatPermBudget)}` : `Permanente: ${formatCurrency(subcatPermBudget)}`}
                             />
@@ -363,13 +380,13 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                                 budgetEntry={subcatBudgetEntry}
                                 onSave={saveBudgetEntry}
                                 formatCurrency={formatCurrency}
-                                isPastMonth={isPastMonth}
+                                disabled={isEditingDisabled}
                              />
                           </div>
 
                            <div className="flex items-center gap-1">
                              <span className={`font-medium w-20 text-right ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</span>
-                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveBudgetEntry(subcat, localBudgets[subcat])} disabled={isPastMonth}>
+                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveBudgetEntry(subcat, localBudgets[subcat])} disabled={isEditingDisabled}>
                                 <Save className="h-4 w-4" />
                              </Button>
                            </div>
@@ -390,5 +407,3 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
-
-    
