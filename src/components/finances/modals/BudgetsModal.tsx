@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save } from 'lucide-react';
+import { Save, ClipboardCopy } from 'lucide-react';
 import type { Transaction, Categories, Budgets } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -118,22 +118,26 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
 
             return (
               <Card key={cat}>
-                <CardHeader className="flex-row items-center justify-between p-4">
-                  <CardTitle className="text-lg">{cat}</CardTitle>
-                  <span className="text-sm font-semibold text-muted-foreground">{formatCurrency(categoryBudget)}</span>
+                <CardHeader className="p-4">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{cat}</CardTitle>
+                    <span className="text-sm font-semibold text-muted-foreground">Total: {formatCurrency(categoryBudget)}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
+                    <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
+                    <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
+                    <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <div className="grid grid-cols-2 gap-2 mb-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Gastado: </span>
-                        <span className="font-semibold">{formatCurrency(categorySpent)}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Diferencial: </span>
-                        <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span>
-                      </div>
+                  <div className="grid grid-cols-[1fr_100px_100px_100px_40px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                    <div className="font-medium">Subcategoría</div>
+                    <div className="text-right font-medium">Gastado</div>
+                    <div className="text-right font-medium">Presupuesto</div>
+                    <div className="text-right font-medium">Diferencial</div>
+                    <div></div>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {sortedSubcategories.map(subcat => {
                       const subcatBudget = localBudgets[subcat] || 0;
                       const subcatSpent = expensesBySubcategory[subcat] || 0;
@@ -141,8 +145,9 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                       const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
                       
                       return (
-                        <div key={subcat} className="grid grid-cols-[1fr_120px_120px_120px] gap-x-4 items-center text-sm">
+                        <div key={subcat} className="grid grid-cols-[1fr_100px_100px_100px_40px] gap-x-4 items-center text-sm px-2 py-1 rounded-md hover:bg-muted/50">
                           <label htmlFor={`budget-${subcat}`}>{subcat}</label>
+                          <div className="text-right">{formatCurrency(subcatSpent)}</div>
                           <Input
                             id={`budget-${subcat}`}
                             value={formatNumber(subcatBudget)}
@@ -151,8 +156,12 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                             placeholder="0"
                             readOnly={isPastMonth}
                           />
-                          <div className="text-right text-muted-foreground">{formatCurrency(subcatSpent)}</div>
                           <div className={`text-right font-medium ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</div>
+                           <div className="text-right">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                              <ClipboardCopy className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       )
                     })}
@@ -164,7 +173,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={onClose}>Cerrar</Button>
           <Button type="button" onClick={handleSaveBudgets}>
             <Save className="mr-2 h-4 w-4" />
             Guardar Cambios
