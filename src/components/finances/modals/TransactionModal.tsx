@@ -11,14 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn, formatNumber, parseFormattedNumber } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-import { Transaction, Categories } from '@/lib/types';
+import { Transaction, Categories, TemporaryCategories } from '@/lib/types';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -36,55 +36,74 @@ interface TransactionModalProps {
   type: 'income' | 'expense';
   transaction?: Transaction | null;
   categories: Categories;
+  tempCategories: TemporaryCategories;
   appId: string;
 }
 
-export function TransactionModal({ isOpen, onClose, type, transaction, categories, appId }: TransactionModalProps) {
+export function TransactionModal({ isOpen, onClose, type, transaction, categories, tempCategories, appId }: TransactionModalProps) {
   const isEditing = !!transaction;
   const { toast } = useToast();
 
-  const sortedCategories = useMemo(() => Object.keys(categories).sort((a, b) => a.localeCompare(b)), [categories]);
-  
+  const allCategories = useMemo(() => ({
+    permanent: Object.keys(categories).sort((a, b) => a.localeCompare(b)),
+    temporary: Object.keys(tempCategories).sort((a, b) => a.localeCompare(b)),
+  }), [categories, tempCategories]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: transaction ? new Date(transaction.timestamp) : new Date(),
-      amount: transaction ? formatNumber(transaction.amount) : '0',
-      description: transaction?.description || '',
-      category: transaction?.category || (type === 'expense' ? sortedCategories[0] : undefined),
-      subcategory: transaction?.subcategory || (type === 'expense' ? categories[sortedCategories[0]]?.[0] : undefined),
+      date: new Date(),
+      amount: '0',
+      description: '',
+      category: undefined,
+      subcategory: undefined,
     }
   });
   
   const selectedCategory = form.watch('category');
 
   const sortedSubcategories = useMemo(() => {
-    if (selectedCategory && categories[selectedCategory]) {
+    if (!selectedCategory) return [];
+    
+    if (categories[selectedCategory]) {
       return [...categories[selectedCategory]].sort((a, b) => a.localeCompare(b));
     }
-    return [];
-  }, [selectedCategory, categories]);
-
-  useEffect(() => {
-    if (transaction) {
-      form.reset({
-        date: new Date(transaction.timestamp),
-        amount: formatNumber(transaction.amount),
-        description: transaction.description || '',
-        category: transaction.category,
-        subcategory: transaction.subcategory,
-      });
-    } else {
-      const defaultCategory = type === 'expense' ? sortedCategories[0] : undefined;
-      form.reset({
-        date: new Date(),
-        amount: '0',
-        description: '',
-        category: defaultCategory,
-        subcategory: defaultCategory ? categories[defaultCategory]?.sort((a,b) => a.localeCompare(b))[0] : undefined
-      });
+    if (tempCategories[selectedCategory]) {
+      return [...tempCategories[selectedCategory]].sort((a, b) => a.localeCompare(b));
     }
-  }, [transaction, isOpen, form, categories, type, sortedCategories]);
+    return [];
+  }, [selectedCategory, categories, tempCategories]);
+  
+  useEffect(() => {
+    if (isOpen) {
+      if (transaction) {
+        form.reset({
+          date: new Date(transaction.timestamp),
+          amount: formatNumber(transaction.amount),
+          description: transaction.description || '',
+          category: transaction.category,
+          subcategory: transaction.subcategory,
+        });
+      } else {
+         const defaultCategory = type === 'expense' ? allCategories.permanent[0] || allCategories.temporary[0] : undefined;
+         let defaultSubcategory: string | undefined = undefined;
+         if (defaultCategory) {
+            const subcats = categories[defaultCategory] || tempCategories[defaultCategory];
+            if (subcats) {
+               defaultSubcategory = [...subcats].sort((a, b) => a.localeCompare(b))[0];
+            }
+         }
+        form.reset({
+          date: new Date(),
+          amount: '0',
+          description: '',
+          category: defaultCategory,
+          subcategory: defaultSubcategory
+        });
+      }
+    }
+  }, [transaction, isOpen, form, categories, tempCategories, type, allCategories]);
+
 
   useEffect(() => {
     if (type === 'expense' && selectedCategory && !transaction) {
@@ -185,16 +204,27 @@ export function TransactionModal({ isOpen, onClose, type, transaction, categorie
                 <FormField control={form.control} name="category" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoría</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Selecciona una categoría" /></SelectTrigger></FormControl>
                       <SelectContent>
-                        {sortedCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {allCategories.permanent.length > 0 && (
+                          <SelectGroup>
+                            <SelectLabel>Permanentes</SelectLabel>
+                            {allCategories.permanent.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                          </SelectGroup>
+                        )}
+                        {allCategories.temporary.length > 0 && (
+                          <SelectGroup>
+                            <SelectLabel>Temporales</SelectLabel>
+                            {allCategories.temporary.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                          </SelectGroup>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}/>
-                {selectedCategory && categories[selectedCategory] && (
+                {selectedCategory && (
                     <FormField control={form.control} name="subcategory" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Subcategoría</FormLabel>

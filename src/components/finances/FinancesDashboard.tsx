@@ -363,6 +363,7 @@ export function FinancesDashboard() {
               type={modalState.type}
               transaction={modalState.transactionToEdit}
               categories={categories}
+              tempCategories={tempCategories}
               appId={appId}
             />
           )}
