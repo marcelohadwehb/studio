@@ -23,7 +23,7 @@ import { formatNumber, parseFormattedNumber, cn } from '@/lib/utils';
 interface TempBudgetPopoverProps {
   subcategory: string;
   budgetEntry: BudgetEntry;
-  onSave: (subcategory: string, budgetEntry: BudgetEntry) => Promise<void>;
+  onSave: (subcategory: string, budgetEntry: BudgetEntry) => void;
   formatCurrency: (amount: number) => string;
   disabled: boolean;
 }
@@ -35,21 +35,15 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, d
   const { toast } = useToast();
 
   const handleSaveTempBudget = () => {
-    if ((!dateRange?.from && !editingTemp) || parseFormattedNumber(amount) <= 0) {
+    if (!dateRange?.from || parseFormattedNumber(amount) <= 0) {
       toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, selecciona un rango de fechas y un monto mayor a cero.' });
       return;
     }
 
     let newTemporaries = [...(budgetEntry.temporaries || [])];
-    const newId = new Date().getTime().toString();
     
-    // Use the start of the 'from' date and the end of the 'to' date (or 'from' if 'to' is not set)
-    const fromDate = dateRange?.from || (editingTemp ? new Date(editingTemp.startDate) : new Date());
-    const toDate = dateRange?.to || fromDate;
-
-    const startDate = startOfMonth(fromDate).getTime();
-    const endDate = endOfMonth(toDate).getTime();
-
+    const startDate = startOfMonth(dateRange.from).getTime();
+    const endDate = endOfMonth(dateRange.to || dateRange.from).getTime();
 
     if (editingTemp) {
       newTemporaries = newTemporaries.map(t =>
@@ -59,7 +53,7 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, d
       );
     } else {
        newTemporaries.push({
-        id: newId,
+        id: new Date().getTime().toString(),
         startDate,
         endDate,
         amount: parseFormattedNumber(amount)
@@ -112,7 +106,7 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, d
                   </p>
               </div>
 
-              {(budgetEntry.temporaries || []).length > 0 && (
+              {(budgetEntry.temporaries || []).length > 0 && !editingTemp && (
                 <div className="space-y-2">
                   <Label>Períodos existentes</Label>
                    <div className="max-h-24 overflow-y-auto space-y-1 pr-2">
@@ -185,7 +179,7 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, d
                   />
               </div>
               <div className="flex justify-end gap-2">
-                {editingTemp && <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>}
+                {editingTemp && <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar Edición</Button>}
                 <Button size="sm" onClick={handleSaveTempBudget}>
                   <Save className="h-4 w-4 mr-2"/>
                   {editingTemp ? 'Actualizar Período' : 'Guardar Período'}
@@ -264,29 +258,43 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     return activeTempBudget?.amount ?? budgetEntry.permanent ?? 0;
   }, [localBudgets]);
 
-  const handlePermanentBudgetChange = (subcategory: string, value: string) => {
+  const handlePermanentBudgetChange = async (subcategory: string, value: string) => {
+    const isEditingDisabled = isPastMonth && pastDateLock;
+    if (isEditingDisabled) {
+      const pinSuccess = await requestPin();
+      if (!pinSuccess) {
+        toast({ variant: 'destructive', title: 'Acción cancelada', description: 'PIN incorrecto.' });
+        return;
+      }
+    }
     const amount = parseFormattedNumber(value);
-    const updatedBudgets = {
-        ...localBudgets,
-        [subcategory]: {
-            ...(localBudgets[subcategory] || { permanent: 0, temporaries: [] }),
-            permanent: amount
-        }
+    const updatedBudgetEntry = {
+      ...(localBudgets[subcategory] || { permanent: 0, temporaries: [] }),
+      permanent: amount
     };
-    setLocalBudgets(updatedBudgets);
+    await saveBudgetEntry(subcategory, updatedBudgetEntry);
   };
 
   const saveBudgetEntry = useCallback(async (subcategory: string, budgetEntry: BudgetEntry) => {
+    const isEditingDisabled = isPastMonth && pastDateLock;
+    if (isEditingDisabled) {
+      const pinSuccess = await requestPin();
+      if (!pinSuccess) {
+        toast({ variant: 'destructive', title: 'Acción cancelada', description: 'PIN incorrecto.' });
+        return;
+      }
+    }
+
     const finalBudgetEntry = {
       permanent: budgetEntry.permanent || 0,
       temporaries: budgetEntry.temporaries || []
     };
   
+    // Create a new object for state update to ensure re-render
     const updatedLocalBudgets = {
       ...localBudgets,
       [subcategory]: finalBudgetEntry
     };
-  
     setLocalBudgets(updatedLocalBudgets);
   
     try {
@@ -296,10 +304,10 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     } catch (error) {
       console.error("Error updating budget:", error);
       toast({ variant: 'destructive', title: 'Error al guardar' });
-      // Revert on failure by refetching or using the original state
+      // Revert on failure by setting back to original budgets from props
       setLocalBudgets(budgets); 
     }
-  }, [appId, budgets, localBudgets, toast]);
+  }, [appId, budgets, localBudgets, toast, isPastMonth, pastDateLock, requestPin]);
 
 
   return (
@@ -373,10 +381,14 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                           <div className="col-span-1 flex items-center gap-1 relative">
                             <Input
                               id={`budget-${subcat}`}
-                              value={formatNumber(activeTempBudget?.amount ?? subcatPermBudget)}
-                              onChange={(e) => handlePermanentBudgetChange(subcat, e.target.value)}
-                              readOnly={isEditingDisabled}
-                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50", isEditingDisabled && "cursor-not-allowed bg-gray-100")}
+                              value={formatNumber(activeTempBudget ? activeTempBudget.amount : subcatPermBudget)}
+                              onChange={(e) => {
+                                // This is a read-only representation if a temp budget is active.
+                                // Permanent budget changes are handled via onBlur.
+                              }}
+                              onBlur={(e) => handlePermanentBudgetChange(subcat, e.target.value)}
+                              readOnly={isEditingDisabled || !!activeTempBudget}
+                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-100 dark:bg-blue-900/50", (isEditingDisabled || !!activeTempBudget) && "cursor-not-allowed bg-gray-100")}
                               placeholder="0"
                               title={activeTempBudget ? `Temporal activo: ${formatCurrency(activeTempBudget.amount)} | Permanente: ${formatCurrency(subcatPermBudget)}` : `Permanente: ${formatCurrency(subcatPermBudget)}`}
                             />
@@ -392,9 +404,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
 
                            <div className="flex items-center gap-1">
                              <span className={`font-medium w-20 text-right ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</span>
-                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveBudgetEntry(subcat, localBudgets[subcat])} disabled={isEditingDisabled}>
-                                <Save className="h-4 w-4" />
-                             </Button>
+                             {/* Save button removed as changes are more direct now */}
                            </div>
                         </div>
                       )
@@ -413,3 +423,5 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
+
+    
