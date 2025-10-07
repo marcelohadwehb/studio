@@ -78,7 +78,19 @@ export function FinancesDashboard() {
           const data = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
           setData(data);
         } else {
-          setData(snapshot.exists() ? snapshot.data() : {});
+          const data = snapshot.exists() ? snapshot.data() : {};
+          if (coll === 'budgets' && data) {
+            // Ensure budgets have the correct structure
+            Object.keys(data).forEach(key => {
+              if (!data[key].temporaries) {
+                data[key].temporaries = [];
+              }
+              if (data[key].permanent === undefined) {
+                 data[key].permanent = 0;
+              }
+            });
+          }
+          setData(data);
         }
       });
       unsubscribes.push(unsubscribe);

@@ -6,14 +6,179 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Save, Calendar as CalendarIcon, X, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { DateRange } from 'react-day-picker';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-import type { Transaction, Categories, Budgets, BudgetEntry } from '@/lib/types';
+import type { Transaction, Categories, Budgets, BudgetEntry, TemporaryBudget } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { formatNumber, parseFormattedNumber } from '@/lib/utils';
+import { formatNumber, parseFormattedNumber, cn } from '@/lib/utils';
+
+
+interface TempBudgetPopoverProps {
+  subcategory: string;
+  budgetEntry: BudgetEntry;
+  onSave: (subcategory: string, budgetEntry: BudgetEntry) => void;
+}
+
+function TempBudgetPopover({ subcategory, budgetEntry, onSave }: TempBudgetPopoverProps) {
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [amount, setAmount] = useState('0');
+  const [editingTemp, setEditingTemp] = useState<TemporaryBudget | null>(null);
+
+  const handleSaveTempBudget = () => {
+    if ((!dateRange?.from && !editingTemp) || parseFormattedNumber(amount) <= 0) {
+      // Maybe show a toast?
+      return;
+    }
+
+    let newTemporaries = [...(budgetEntry.temporaries || [])];
+
+    if (editingTemp) {
+      // Update existing
+      const from = dateRange?.from || editingTemp.startDate;
+      const to = dateRange?.to || editingTemp.endDate;
+      newTemporaries = newTemporaries.map(t => 
+        t.id === editingTemp.id 
+          ? { ...t, startDate: startOfMonth(from).getTime(), endDate: endOfMonth(to || from).getTime(), amount: parseFormattedNumber(amount) }
+          : t
+      );
+    } else {
+      // Add new
+       newTemporaries.push({
+        id: new Date().getTime().toString(),
+        startDate: startOfMonth(dateRange!.from!).getTime(),
+        endDate: endOfMonth(dateRange!.to || dateRange!.from!).getTime(),
+        amount: parseFormattedNumber(amount)
+      });
+    }
+
+    onSave(subcategory, { ...budgetEntry, temporaries: newTemporaries });
+    resetForm();
+  };
+
+  const handleDeleteTempBudget = (tempId: string) => {
+    const newTemporaries = (budgetEntry.temporaries || []).filter(t => t.id !== tempId);
+    onSave(subcategory, { ...budgetEntry, temporaries: newTemporaries });
+  };
+  
+  const handleEditTempBudget = (temp: TemporaryBudget) => {
+    setEditingTemp(temp);
+    setDateRange({ from: new Date(temp.startDate), to: new Date(temp.endDate) });
+    setAmount(formatNumber(temp.amount));
+  };
+  
+  const resetForm = () => {
+    setEditingTemp(null);
+    setDateRange(undefined);
+    setAmount('0');
+  };
+
+  return (
+    <Popover onOpenChange={(isOpen) => !isOpen && resetForm()}>
+      <PopoverTrigger asChild>
+        <Button size="icon" variant="ghost" className="h-8 w-8 absolute right-0">
+          <CalendarIcon className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+          <div className="grid gap-4">
+              <div className="space-y-2">
+                  <h4 className="font-medium leading-none">{editingTemp ? 'Editar' : 'Nuevo'} Presupuesto Temporal</h4>
+                  <p className="text-sm text-muted-foreground">
+                      Define un monto para un período específico.
+                  </p>
+              </div>
+
+              {(budgetEntry.temporaries || []).length > 0 && (
+                <div className="space-y-2">
+                  <Label>Períodos existentes</Label>
+                   <div className="max-h-24 overflow-y-auto space-y-1 pr-2">
+                    {(budgetEntry.temporaries || []).map(t => (
+                      <div key={t.id} className="text-xs flex justify-between items-center bg-muted p-1 rounded-md">
+                        <div>
+                          <p className="font-semibold">{formatNumber(t.amount)}</p>
+                          <p>{format(new Date(t.startDate), 'MMM yyyy', {locale: es})} - {format(new Date(t.endDate), 'MMM yyyy', {locale: es})}</p>
+                        </div>
+                        <div className="flex">
+                           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditTempBudget(t)}>
+                              <CalendarIcon className="h-3 w-3" />
+                           </Button>
+                           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleDeleteTempBudget(t.id)}>
+                              <Trash2 className="h-3 w-3" />
+                           </Button>
+                        </div>
+                      </div>
+                    ))}
+                   </div>
+                </div>
+              )}
+
+              <div className="grid gap-2">
+                  <Label>Rango de Fechas</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                       <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                          "justify-start text-left font-normal h-8",
+                          !dateRange && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange?.from ? (
+                          dateRange.to ? (
+                            <>
+                              {format(dateRange.from, "LLL y", { locale: es })} -{" "}
+                              {format(dateRange.to, "LLL y", { locale: es })}
+                            </>
+                          ) : (
+                            format(dateRange.from, "LLL y", { locale: es })
+                          )
+                        ) : (
+                          <span>Elige un rango</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange?.from}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
+              </div>
+               <div className="grid gap-2">
+                  <Label htmlFor={`temp-budget-${subcategory}`}>Monto</Label>
+                  <Input
+                      id={`temp-budget-${subcategory}`}
+                      value={amount}
+                      onChange={(e) => setAmount(formatNumber(parseFormattedNumber(e.target.value)))}
+                      className="h-8"
+                  />
+              </div>
+              <div className="flex justify-end gap-2">
+                {editingTemp && <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>}
+                <Button size="sm" onClick={handleSaveTempBudget}>
+                  {editingTemp ? 'Actualizar' : 'Guardar'} Período
+                </Button>
+              </div>
+          </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 interface BudgetsModalProps {
   isOpen: boolean;
@@ -29,7 +194,6 @@ interface BudgetsModalProps {
 export function BudgetsModal({ isOpen, onClose, categories, budgets, transactions, appId, formatCurrency, currentDate }: BudgetsModalProps) {
   const [localBudgets, setLocalBudgets] = useState<Budgets>(budgets);
   const { toast } = useToast();
-  const yearMonthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
   
   useEffect(() => {
     setLocalBudgets(budgets);
@@ -45,53 +209,38 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
       }, {} as { [key: string]: number });
   }, [transactions]);
   
-  const getSubcategoryBudget = (subcat: string, yearMonth: string): number => {
+  const getSubcategoryBudget = (subcat: string, date: Date): number => {
     const budgetEntry = localBudgets[subcat];
     if (!budgetEntry) return 0;
-    return budgetEntry.temporary?.[yearMonth] ?? budgetEntry.permanent ?? 0;
+
+    const currentTime = date.getTime();
+    const activeTempBudget = budgetEntry.temporaries?.find(t => 
+      currentTime >= t.startDate && currentTime <= t.endDate
+    );
+
+    return activeTempBudget?.amount ?? budgetEntry.permanent ?? 0;
   };
   
-  const handleBudgetChange = (subcategory: string, value: string) => {
+  const handlePermanentBudgetChange = (subcategory: string, value: string) => {
     const amount = parseFormattedNumber(value);
     setLocalBudgets(prev => ({ 
         ...prev, 
         [subcategory]: {
             ...prev[subcategory],
             permanent: amount,
-            temporary: prev[subcategory]?.temporary || {}
+            temporaries: prev[subcategory]?.temporaries || []
         } 
     }));
-  };
-
-  const handleTempBudgetChange = (subcategory: string, value: string) => {
-    const amount = parseFormattedNumber(value);
-    setLocalBudgets(prev => {
-        const newBudgets = { ...prev };
-        if (!newBudgets[subcategory]) {
-            newBudgets[subcategory] = { permanent: 0, temporary: {} };
-        }
-        if (!newBudgets[subcategory].temporary) {
-            newBudgets[subcategory].temporary = {};
-        }
-        newBudgets[subcategory].temporary[yearMonthKey] = amount;
-        return newBudgets;
-    });
-  };
-
-  const handleClearTempBudget = async (subcategory: string) => {
-    const newBudgets = { ...localBudgets };
-    if (newBudgets[subcategory]?.temporary?.[yearMonthKey]) {
-        delete newBudgets[subcategory].temporary[yearMonthKey];
-        setLocalBudgets(newBudgets);
-        await saveBudgetEntry(subcategory, newBudgets[subcategory]);
-        toast({ title: 'Presupuesto temporal eliminado' });
-    }
   };
 
   const saveBudgetEntry = async (subcategory: string, budgetEntry: BudgetEntry) => {
     try {
       const budgetsRef = doc(db, "artifacts", appId, "public", "data", "budgets", "budgets");
-      await setDoc(budgetsRef, { [subcategory]: budgetEntry }, { merge: true });
+      const finalBudgetEntry = {
+        permanent: budgetEntry.permanent || 0,
+        temporaries: budgetEntry.temporaries || []
+      };
+      await setDoc(budgetsRef, { [subcategory]: finalBudgetEntry }, { merge: true });
       toast({ title: `Presupuesto para "${subcategory}" guardado` });
     } catch (error) {
       console.error("Error updating budget:", error);
@@ -109,7 +258,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 my-4">
           {Object.keys(categories).sort((a, b) => a.localeCompare(b)).map(cat => {
             const sortedSubcategories = [...categories[cat]].sort((a, b) => a.localeCompare(b));
-            const categoryBudget = sortedSubcategories.reduce((sum, subcat) => sum + getSubcategoryBudget(subcat, yearMonthKey), 0);
+            const categoryBudget = sortedSubcategories.reduce((sum, subcat) => sum + getSubcategoryBudget(subcat, currentDate), 0);
             const categorySpent = sortedSubcategories.reduce((sum, subcat) => sum + (expensesBySubcategory[subcat] || 0), 0);
             const categoryDifference = categoryBudget - categorySpent;
             const differenceColor = categoryDifference >= 0 ? 'text-green-600' : 'text-red-600';
@@ -140,10 +289,15 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                     </div>
                     {sortedSubcategories.map(subcat => {
                       const subcatSpent = expensesBySubcategory[subcat] || 0;
-                      const subcatBudgetEntry = localBudgets[subcat] || { permanent: 0, temporary: {} };
+                      const subcatBudgetEntry = localBudgets[subcat] || { permanent: 0, temporaries: [] };
                       const subcatPermBudget = subcatBudgetEntry.permanent || 0;
-                      const subcatTempBudget = subcatBudgetEntry.temporary?.[yearMonthKey];
-                      const subcatBudget = subcatTempBudget ?? subcatPermBudget;
+                      
+                      const currentTime = currentDate.getTime();
+                      const activeTempBudget = subcatBudgetEntry.temporaries?.find(t => 
+                        currentTime >= t.startDate && currentTime <= t.endDate
+                      );
+
+                      const subcatBudget = activeTempBudget?.amount ?? subcatPermBudget;
                       const subcatDiff = subcatBudget - subcatSpent;
                       const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
 
@@ -155,46 +309,18 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                           <div className="col-span-1 flex items-center gap-1 relative">
                             <Input
                               id={`budget-${subcat}`}
-                              value={formatNumber(subcatBudget)}
-                              onChange={(e) => handleBudgetChange(subcat, e.target.value)}
-                              className="h-8 text-right w-full bg-background pr-8"
+                              value={formatNumber(subcatPermBudget)}
+                              onChange={(e) => handlePermanentBudgetChange(subcat, e.target.value)}
+                              className={cn("h-8 text-right w-full bg-background pr-8", activeTempBudget && "bg-blue-50")}
                               placeholder="0"
-                              title={subcatTempBudget !== undefined ? `Temporal: ${formatCurrency(subcatTempBudget)} | Permanente: ${formatCurrency(subcatPermBudget)}` : `Permanente: ${formatCurrency(subcatPermBudget)}`}
+                              title={activeTempBudget ? `Temporal activo: ${formatCurrency(activeTempBudget.amount)} | Permanente: ${formatCurrency(subcatPermBudget)}` : `Permanente: ${formatCurrency(subcatPermBudget)}`}
                             />
-                             {subcatTempBudget !== undefined && <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-500 rounded-full" title="Presupuesto temporal activo"/>}
-                             <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button size="icon" variant="ghost" className="h-8 w-8 absolute right-0">
-                                    <CalendarIcon className="h-4 w-4" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-60">
-                                    <div className="grid gap-4">
-                                        <div className="space-y-2">
-                                            <h4 className="font-medium leading-none">Presupuesto Temporal</h4>
-                                            <p className="text-sm text-muted-foreground">
-                                                Para {currentDate.toLocaleString('es-CL', { month: 'long', year: 'numeric' })}
-                                            </p>
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={`temp-budget-${subcat}`}>Monto</Label>
-                                            <div className="flex items-center gap-2">
-                                                <Input
-                                                    id={`temp-budget-${subcat}`}
-                                                    value={formatNumber(subcatTempBudget ?? 0)}
-                                                    onChange={(e) => handleTempBudgetChange(subcat, e.target.value)}
-                                                    className="h-8"
-                                                />
-                                                {subcatTempBudget !== undefined && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleClearTempBudget(subcat)}>
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                             {activeTempBudget && <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-500 rounded-full" title={`Presupuesto temporal activo: ${formatCurrency(activeTempBudget.amount)}`}/>}
+                             <TempBudgetPopover 
+                                subcategory={subcat}
+                                budgetEntry={subcatBudgetEntry}
+                                onSave={saveBudgetEntry}
+                             />
                           </div>
                            
                            <div className="flex items-center gap-1">
