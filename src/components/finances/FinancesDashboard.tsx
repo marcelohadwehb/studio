@@ -173,7 +173,6 @@ export function FinancesDashboard() {
     const now = new Date();
     
     let startTimestamp: number, endTimestamp: number;
-    let transToExport: Transaction[] = [];
 
     if (exportType === 'month') {
         startTimestamp = new Date(currentYear, currentMonth, 1).getTime();
@@ -193,7 +192,7 @@ export function FinancesDashboard() {
         endTimestamp = now.getTime();
     }
     
-    transToExport = allTransactions.filter(t => t.timestamp >= startTimestamp && t.timestamp <= endTimestamp);
+    const transToExport = allTransactions.filter(t => t.timestamp >= startTimestamp && t.timestamp <= endTimestamp);
 
     const toCsv = (headers: string[], data: string[][]) => {
       return [headers.join(';'), ...data.map(row => row.join(';'))].join('\n');
@@ -238,7 +237,7 @@ export function FinancesDashboard() {
     Object.entries(tempCategories).forEach(([cat, subcats]) => {
         subcats.forEach(subcat => {
             const tempBudget = tempBudgets[subcat];
-            if (tempBudget) {
+            if (tempBudget && tempBudget.from && tempBudget.to && typeof tempBudget.from.year === 'number') {
                  const fromDate = new Date(tempBudget.from.year, tempBudget.from.month, 1);
                  const toDate = new Date(tempBudget.to.year, tempBudget.to.month + 1, 0);
 
