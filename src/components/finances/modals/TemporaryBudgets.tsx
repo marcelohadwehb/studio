@@ -74,14 +74,13 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     return null;
   };
   
-  const handleBudgetChange = (subcategory: string, field: 'amount' | 'from' | 'to', value: any) => {
+ const handleBudgetChange = (subcategory: string, field: 'amount' | 'from' | 'to', value: any) => {
     setLocalBudgets(prev => {
         const newLocalBudgets = { ...prev };
         
-        const currentBudget = newLocalBudgets[subcategory];
-        const today = new Date();
-
-        if (!currentBudget) {
+        // Ensure the subcategory exists in localBudgets, if not, initialize it.
+        if (!newLocalBudgets[subcategory]) {
+            const today = new Date();
             newLocalBudgets[subcategory] = {
                 amount: 0,
                 from: { month: today.getMonth(), year: today.getFullYear() },
@@ -89,7 +88,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
             };
         }
         
-        const budget = { ...(newLocalBudgets[subcategory] || {}) };
+        const budget = { ...newLocalBudgets[subcategory] };
 
         if (field === 'amount') {
             const numValue = parseFormattedNumber(value);
@@ -98,8 +97,9 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
             budget[field] = value;
         }
 
-        newLocalBudgets[subcategory] = budget as TemporaryBudget;
+        newLocalBudgets[subcategory] = budget;
 
+        // Perform date validation only if both from and to dates are fully defined.
         if (budget.from && budget.to && typeof budget.from.year === 'number' && typeof budget.from.month === 'number' && typeof budget.to.year === 'number' && typeof budget.to.month === 'number') {
           const fromDate = new Date(budget.from.year, budget.from.month, 1);
           const toDate = new Date(budget.to.year, budget.to.month, 1);
@@ -111,7 +111,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
         return newLocalBudgets;
     });
-  };
+};
 
   const handleSaveBudgets = async () => {
     try {
@@ -146,7 +146,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                   <CardTitle className="text-lg">{cat}</CardTitle>
                    <span className="text-sm font-semibold text-muted-foreground">Total: {formatCurrency(categoryBudget)}</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
                   <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
                   <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
                   <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
@@ -158,7 +158,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                   <div className="text-right font-medium">Gastado</div>
                   <div className="text-right font-medium">Presupuesto</div>
                   <div className="text-right font-medium">Diferencial</div>
-                  <div className="font-medium text-center">Período y Monto</div>
                 </div>
                 <div className="space-y-4 sm:space-y-2">
                   {sortedSubcategories.map(subcat => {
