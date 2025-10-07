@@ -32,16 +32,23 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
   const { toast } = useToast();
 
   useEffect(() => {
-    // Sanitize budgets on load
+    // Sanitize budgets on load and sort periods
     const sanitized: TemporaryBudgets = {};
     for (const subcat in tempBudgets) {
-      sanitized[subcat] = tempBudgets[subcat].map(b => ({
-        ...b,
-        amount: (typeof b.amount === 'number' && !isNaN(b.amount)) ? b.amount : 0,
-      }));
+      const periods = tempBudgets[subcat] || [];
+      sanitized[subcat] = periods
+        .map(b => ({
+            ...b,
+            amount: (typeof b.amount === 'number' && !isNaN(b.amount)) ? b.amount : 0,
+        }))
+        .sort((a, b) => {
+            if (a.from.year !== b.from.year) return a.from.year - b.from.year;
+            return a.from.month - b.from.month;
+        });
     }
     setLocalBudgets(sanitized);
   }, [tempBudgets]);
+
 
   const expensesBySubcategory = useMemo(() => {
     return transactions
@@ -89,7 +96,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
   const handleRemovePeriod = (subcategory: string, index: number) => {
     setLocalBudgets(prev => ({
       ...prev,
-      [subcategory]: prev[subcategory].filter((_, i) => i !== index),
+      [subcategory]: (prev[subcategory] || []).filter((_, i) => i !== index),
     }));
   };
   
@@ -101,7 +108,8 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
         const period = { ...updatedPeriods[index] };
         
         if (field === 'amount') {
-            period.amount = isNaN(parseFormattedNumber(value)) ? 0 : parseFormattedNumber(value);
+            const numValue = parseFormattedNumber(value);
+            period.amount = isNaN(numValue) ? 0 : numValue;
         } else if (field === 'from' || field === 'to') {
             period[field] = value;
         }
@@ -113,19 +121,17 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
         if(fromDate > toDate) {
             toast({ variant: 'destructive', title: 'Error de Fechas', description: 'La fecha de inicio no puede ser posterior a la fecha de fin.' });
-            return prev;
         }
 
         return { ...prev, [subcategory]: updatedPeriods };
     });
   };
 
-  const handleSaveSubcategoryBudgets = async (subcategory: string) => {
+  const handleSaveBudgets = async () => {
     try {
-        const budgetsToSave = { ...tempBudgets, [subcategory]: localBudgets[subcategory] || [] };
         const budgetsRef = doc(db, "artifacts", appId, "public", "data", "temp_budgets", "temp_budgets");
-        await setDoc(budgetsRef, budgetsToSave);
-        toast({ title: `Presupuestos para ${subcategory} guardados.` });
+        await setDoc(budgetsRef, localBudgets);
+        toast({ title: `Presupuestos temporales guardados.` });
     } catch (error) {
         console.error("Error saving temporary budgets:", error);
         toast({ variant: 'destructive', title: 'Error al guardar.' });
@@ -174,7 +180,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="font-semibold">{subcat}</h4>
                                 <div className="flex gap-4 text-sm">
-                                    <span>Presupuesto: <span className="font-bold">{formatCurrency(budgetAmount)}</span></span>
+                                    <span>Presupuesto (actual): <span className="font-bold">{formatCurrency(budgetAmount)}</span></span>
                                     <span>Gastado: <span className="font-bold">{formatCurrency(spent)}</span></span>
                                     <span>Diferencial: <span className={`font-bold ${diffColor}`}>{formatCurrency(diff)}</span></span>
                                 </div>
@@ -232,14 +238,10 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                               ))}
                             </div>
 
-                            <div className="flex justify-between items-center mt-2">
+                            <div className="flex justify-start items-center mt-2">
                                 <Button variant="outline" size="sm" onClick={() => handleAddPeriod(subcat)}>
                                     <PlusCircle className="mr-2 h-4 w-4" />
                                     Añadir Período
-                                </Button>
-                                <Button size="sm" onClick={() => handleSaveSubcategoryBudgets(subcat)}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Guardar {subcat}
                                 </Button>
                             </div>
                         </div>
@@ -249,6 +251,12 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
             </Card>
           )
         })}
+      </div>
+      <div className="flex justify-end mt-4">
+        <Button onClick={handleSaveBudgets}>
+          <Save className="mr-2 h-4 w-4" />
+          Guardar Cambios
+        </Button>
       </div>
     </>
   );
