@@ -36,18 +36,20 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     const today = new Date();
     const defaultPeriod = { month: today.getMonth(), year: today.getFullYear() };
 
+    // Ensure every subcategory from tempCategories has an entry in localBudgets
     for (const cat in tempCategories) {
       for (const subcat of tempCategories[cat]) {
-        const budget = tempBudgets[subcat];
+        const existingBudget = tempBudgets[subcat];
         sanitized[subcat] = {
-            amount: budget?.amount && typeof budget.amount === 'number' ? budget.amount : 0,
-            from: budget?.from && typeof budget.from.year === 'number' ? budget.from : defaultPeriod,
-            to: budget?.to && typeof budget.to.year === 'number' ? budget.to : defaultPeriod,
+            amount: existingBudget?.amount && typeof existingBudget.amount === 'number' ? existingBudget.amount : 0,
+            from: existingBudget?.from && typeof existingBudget.from.year === 'number' ? existingBudget.from : defaultPeriod,
+            to: existingBudget?.to && typeof existingBudget.to.year === 'number' ? existingBudget.to : defaultPeriod,
         };
       }
     }
     setLocalBudgets(sanitized);
   }, [tempBudgets, tempCategories]);
+
 
   const expensesBySubcategory = useMemo(() => {
     const relevantSubcategories = new Set(Object.values(tempCategories).flat());
@@ -66,8 +68,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     const budget = budgets[subcategory];
 
     if (!budget || !budget.from || !budget.to) return null;
-    if (typeof budget.from.year !== 'number' || typeof budget.from.month !== 'number' || 
-        typeof budget.to.year !== 'number' || typeof budget.to.month !== 'number') {
+     if (typeof budget.from.year !== 'number' || typeof budget.from.month !== 'number' || typeof budget.to.year !== 'number' || typeof budget.to.month !== 'number') {
         return null;
     }
 
@@ -85,7 +86,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
  const handleBudgetChange = (subcategory: string, field: 'amount' | 'from' | 'to', value: any) => {
     setLocalBudgets(prev => {
         const newLocalBudgets = { ...prev };
-        
         const budget = { ...(newLocalBudgets[subcategory] || {}) };
 
         if (field === 'amount') {
@@ -113,7 +113,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
   const handleSaveBudgets = async () => {
     try {
         const budgetsRef = doc(db, "artifacts", appId, "public", "data", "temp_budgets", "temp_budgets");
-        await setDoc(budgetsRef, localBudgets);
+        await setDoc(budgetsRef, localBudgets, { merge: true });
         toast({ title: `Presupuestos temporales guardados.` });
     } catch (error) {
         console.error("Error saving temporary budgets:", error);
