@@ -42,6 +42,7 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, d
 
     let newTemporaries = [...(budgetEntry.temporaries || [])];
     
+    // Ensure we capture the full month range
     const startDate = startOfMonth(dateRange.from).getTime();
     const endDate = endOfMonth(dateRange.to || dateRange.from).getTime();
 
@@ -271,7 +272,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     };
     await saveBudgetEntry(subcategory, updatedBudgetEntry);
   };
-
+  
   const saveBudgetEntry = useCallback(async (subcategory: string, budgetEntry: BudgetEntry) => {
     const isEditingDisabled = isPastMonth && pastDateLock;
     if (isEditingDisabled) {
@@ -281,21 +282,20 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
         return;
       }
     }
-
+  
     const finalBudgetEntry = {
       permanent: budgetEntry.permanent || 0,
       temporaries: budgetEntry.temporaries || []
     };
   
-    // Create a new object for state update to ensure re-render
-    const updatedLocalBudgets = {
-      ...localBudgets,
-      [subcategory]: finalBudgetEntry
-    };
+    // Create a deep copy for the new state to ensure React detects the change
+    const updatedLocalBudgets = JSON.parse(JSON.stringify(localBudgets));
+    updatedLocalBudgets[subcategory] = finalBudgetEntry;
     setLocalBudgets(updatedLocalBudgets);
   
     try {
       const budgetsRef = doc(db, "artifacts", appId, "public", "data", "budgets", "budgets");
+      // Use setDoc with merge:true to only update the specific subcategory field
       await setDoc(budgetsRef, { [subcategory]: finalBudgetEntry }, { merge: true });
       toast({ title: `Presupuesto para "${subcategory}" guardado` });
     } catch (error) {
@@ -416,5 +416,3 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
-
-    
