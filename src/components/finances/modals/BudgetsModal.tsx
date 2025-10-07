@@ -416,3 +416,5 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     </Dialog>
   );
 }
+
+    
