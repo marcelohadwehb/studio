@@ -370,6 +370,7 @@ export function FinancesDashboard() {
               transactions={transactionsForCurrentMonth}
               appId={appId}
               formatCurrency={formatCurrency}
+              currentDate={currentDate}
             />
           )}
           {modalState.type === 'categories' && (

@@ -13,8 +13,13 @@ export interface Categories {
   [category: string]: string[];
 }
 
+export interface BudgetEntry {
+  permanent: number;
+  temporary: { [yearMonth: string]: number }; // e.g. "2024-6": 50000
+}
+
 export interface Budgets {
-  [subcategory: string]: number;
+  [subcategory: string]: BudgetEntry;
 }
 
 export interface RecordEntry {
