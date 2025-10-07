@@ -169,36 +169,11 @@ export function FinancesDashboard() {
   const handleExport = useCallback(async (exportType: 'month' | 'year' | 'last5years') => {
     toast({ title: `Exportando...` });
 
-    let transToExport: Transaction[] = [];
     let fileName = `Finanzas-Familiares`;
     const now = new Date();
-
-    const fetchAllData = async () => {
-        const transQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
-        const transSnapshot = await getDocs(transQuery);
-        const allDbTransactions = transSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
-        
-        const recordsSnapshot = await getDocs(collection(db, "artifacts", appId, "public", "data", "records"));
-        const allRecords = recordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecordItem));
-        
-        const budgetsSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "budgets", "budgets"));
-        const permBudgets = budgetsSnapshot.exists() ? budgetsSnapshot.data() as Budgets : {};
-
-        const tempBudgetsSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "temp_budgets", "temp_budgets"));
-        const tempBudgetsData = tempBudgetsSnapshot.exists() ? tempBudgetsSnapshot.data() as TemporaryBudgets : {};
-
-        const categoriesSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "categories", "categories"));
-        const permCategories = categoriesSnapshot.exists() ? categoriesSnapshot.data() as Categories : {};
-
-        const tempCategoriesSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "temp_categories", "temp_categories"));
-        const tempCategoriesData = tempCategoriesSnapshot.exists() ? tempCategoriesSnapshot.data() as TemporaryCategories : {};
-
-        return { allDbTransactions, allRecords, permBudgets, tempBudgetsData, permCategories, tempCategoriesData };
-    };
-
-    const { allDbTransactions, allRecords, permBudgets, tempBudgetsData, permCategories, tempCategoriesData } = await fetchAllData();
     
     let startTimestamp: number, endTimestamp: number;
+    let transToExport: Transaction[] = [];
 
     if (exportType === 'month') {
         startTimestamp = new Date(currentYear, currentMonth, 1).getTime();
@@ -218,7 +193,7 @@ export function FinancesDashboard() {
         endTimestamp = now.getTime();
     }
     
-    transToExport = allDbTransactions.filter(t => t.timestamp >= startTimestamp && t.timestamp <= endTimestamp);
+    transToExport = allTransactions.filter(t => t.timestamp >= startTimestamp && t.timestamp <= endTimestamp);
 
     const toCsv = (headers: string[], data: string[][]) => {
       return [headers.join(';'), ...data.map(row => row.join(';'))].join('\n');
@@ -248,9 +223,9 @@ export function FinancesDashboard() {
     const budgetRows: string[][] = [];
     
     // Permanent Budgets
-    Object.entries(permCategories).forEach(([cat, subcats]) => {
+    Object.entries(categories).forEach(([cat, subcats]) => {
         subcats.forEach(subcat => {
-            const budgetAmount = permBudgets[subcat] || 0;
+            const budgetAmount = budgets[subcat] || 0;
             if (budgetAmount > 0) {
               const spent = expensesBySubcategory[subcat] || 0;
               const diff = budgetAmount - spent;
@@ -260,9 +235,9 @@ export function FinancesDashboard() {
     });
 
     // Temporary Budgets
-    Object.entries(tempCategoriesData).forEach(([cat, subcats]) => {
+    Object.entries(tempCategories).forEach(([cat, subcats]) => {
         subcats.forEach(subcat => {
-            const tempBudget = tempBudgetsData[subcat];
+            const tempBudget = tempBudgets[subcat];
             if (tempBudget) {
                  const fromDate = new Date(tempBudget.from.year, tempBudget.from.month, 1);
                  const toDate = new Date(tempBudget.to.year, tempBudget.to.month + 1, 0);
@@ -282,7 +257,7 @@ export function FinancesDashboard() {
 
     // 3. Records CSV
     const recordsHeaders = ["Registro", "Descripción", "Monto"];
-    const recordsRows = allRecords.flatMap(record => {
+    const recordsRows = records.flatMap(record => {
       if (!record.entries) return [];
       try {
         const entries: { description: string, amount: number }[] = JSON.parse(record.entries);
@@ -309,7 +284,7 @@ export function FinancesDashboard() {
     document.body.removeChild(link);
 
     toast({ title: "¡Archivo exportado!" });
-  }, [currentMonth, currentYear, currentDate, toast]);
+  }, [currentMonth, currentYear, currentDate, toast, allTransactions, records, budgets, tempBudgets, categories, tempCategories]);
   
   const handleCleanData = async (startDate: Date, endDate: Date) => {
     setConfirmDialog({
