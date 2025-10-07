@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { PermanentBudgets } from './PermanentBudgets';
 import { TemporaryBudgets } from './TemporaryBudgets';
+import { SummaryView } from './SummaryView';
 
 import type { Categories, Budgets, Transaction, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 
@@ -33,7 +34,7 @@ export function BudgetsModal({
   tempBudgets,
   tempCategories,
 }: BudgetsModalProps) {
-  const [activeTab, setActiveTab] = useState<'permanent' | 'temporary'>('permanent');
+  const [activeTab, setActiveTab] = useState<'permanent' | 'temporary' | 'summary'>('summary');
 
   return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -41,6 +42,12 @@ export function BudgetsModal({
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">Gestión de Presupuestos</DialogTitle>
              <div className="flex justify-center gap-2 pt-4">
+               <Button
+                variant={activeTab === 'summary' ? 'default' : 'outline'}
+                onClick={() => setActiveTab('summary')}
+              >
+                Resumen
+              </Button>
               <Button
                 variant={activeTab === 'permanent' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('permanent')}
@@ -57,6 +64,17 @@ export function BudgetsModal({
           </DialogHeader>
           
           <div className="mt-4">
+            {activeTab === 'summary' && (
+              <SummaryView
+                categories={categories}
+                budgets={budgets}
+                tempCategories={tempCategories}
+                tempBudgets={tempBudgets}
+                transactions={transactions}
+                formatCurrency={formatCurrency}
+                currentDate={currentDate}
+              />
+            )}
             {activeTab === 'permanent' && (
               <PermanentBudgets
                 categories={categories}
