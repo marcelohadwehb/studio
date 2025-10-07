@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { db, auth, signIn } from '@/lib/firebase';
 import { collection, onSnapshot, doc, setDoc, query, where, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import type { Transaction, Categories, Budgets, RecordItem, ModalState, TemporaryBudgets, TemporaryCategories } from '@/lib/types';
+import type { Transaction, Categories, Budgets, RecordItem, ModalState, TemporaryBudgets, TemporaryCategories, TemporaryBudget } from '@/lib/types';
 
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -168,24 +168,41 @@ export function FinancesDashboard() {
 
   const handleExport = useCallback(async (exportType: 'month' | 'year' | 'last5years') => {
     toast({ title: `Exportando...` });
-    
+
     let transToExport: Transaction[] = [];
     let fileName = `Finanzas-Familiares`;
     const now = new Date();
 
-    const fetchAllTransactions = async () => {
+    const fetchAllData = async () => {
         const transQuery = collection(db, "artifacts", appId, "public", "data", "transactions");
-        const querySnapshot = await getDocs(transQuery);
-        return querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+        const transSnapshot = await getDocs(transQuery);
+        const allDbTransactions = transSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+        
+        const recordsSnapshot = await getDocs(collection(db, "artifacts", appId, "public", "data", "records"));
+        const allRecords = recordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecordItem));
+        
+        const budgetsSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "budgets", "budgets"));
+        const permBudgets = budgetsSnapshot.exists() ? budgetsSnapshot.data() as Budgets : {};
+
+        const tempBudgetsSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "temp_budgets", "temp_budgets"));
+        const tempBudgetsData = tempBudgetsSnapshot.exists() ? tempBudgetsSnapshot.data() as TemporaryBudgets : {};
+
+        const categoriesSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "categories", "categories"));
+        const permCategories = categoriesSnapshot.exists() ? categoriesSnapshot.data() as Categories : {};
+
+        const tempCategoriesSnapshot = await getDoc(doc(db, "artifacts", appId, "public", "data", "temp_categories", "temp_categories"));
+        const tempCategoriesData = tempCategoriesSnapshot.exists() ? tempCategoriesSnapshot.data() as TemporaryCategories : {};
+
+        return { allDbTransactions, allRecords, permBudgets, tempBudgetsData, permCategories, tempCategoriesData };
     };
 
-    const allDbTransactions = await fetchAllTransactions();
+    const { allDbTransactions, allRecords, permBudgets, tempBudgetsData, permCategories, tempCategoriesData } = await fetchAllData();
+    
+    let startTimestamp: number, endTimestamp: number;
 
     if (exportType === 'month') {
-        const startOfMonth = new Date(currentYear, currentMonth, 1).getTime();
-        const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).getTime();
-        transToExport = allDbTransactions.filter(t => t.timestamp >= startOfMonth && t.timestamp <= endOfMonth);
+        startTimestamp = new Date(currentYear, currentMonth, 1).getTime();
+        endTimestamp = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).getTime();
         const monthName = currentDate.toLocaleString('es-CL', { month: 'long' });
         fileName += `-${monthName}-${currentYear}.csv`;
     } else {
@@ -197,17 +214,17 @@ export function FinancesDashboard() {
             start = new Date(now.getFullYear() - 5, 0, 1);
             fileName += `-Ultimos-5-Años.csv`;
         }
-        const end = new Date(); // up to now
-        transToExport = allDbTransactions.filter(t => t.timestamp >= start.getTime() && t.timestamp <= end.getTime());
+        startTimestamp = start.getTime();
+        endTimestamp = now.getTime();
     }
     
-    const recordsSnapshot = await getDocs(collection(db, "artifacts", appId, "public", "data", "records"));
-    const allRecords = recordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecordItem));
+    transToExport = allDbTransactions.filter(t => t.timestamp >= startTimestamp && t.timestamp <= endTimestamp);
 
     const toCsv = (headers: string[], data: string[][]) => {
       return [headers.join(';'), ...data.map(row => row.join(';'))].join('\n');
     }
 
+    // 1. Transactions CSV
     const transHeaders = ["Fecha", "Tipo", "Descripción", "Categoría", "Subcategoría", "Monto"];
     const transRows = transToExport.map(t => [
         t.date,
@@ -217,7 +234,53 @@ export function FinancesDashboard() {
         t.subcategory || '',
         t.amount.toString()
     ]);
+    const transCsv = toCsv(transHeaders, transRows);
+
+    // 2. Budgets CSV
+    const expensesBySubcategory = transToExport
+        .filter(t => t.type === 'expense' && t.subcategory)
+        .reduce((acc, t) => {
+            if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
+            acc[t.subcategory!] += t.amount;
+            return acc;
+        }, {} as { [key: string]: number });
+
+    const budgetRows: string[][] = [];
     
+    // Permanent Budgets
+    Object.entries(permCategories).forEach(([cat, subcats]) => {
+        subcats.forEach(subcat => {
+            const budgetAmount = permBudgets[subcat] || 0;
+            if (budgetAmount > 0) {
+              const spent = expensesBySubcategory[subcat] || 0;
+              const diff = budgetAmount - spent;
+              budgetRows.push([cat, subcat, budgetAmount.toString(), spent.toString(), diff.toString()]);
+            }
+        });
+    });
+
+    // Temporary Budgets
+    Object.entries(tempCategoriesData).forEach(([cat, subcats]) => {
+        subcats.forEach(subcat => {
+            const tempBudget = tempBudgetsData[subcat];
+            if (tempBudget) {
+                 const fromDate = new Date(tempBudget.from.year, tempBudget.from.month, 1);
+                 const toDate = new Date(tempBudget.to.year, tempBudget.to.month + 1, 0);
+
+                 if (fromDate.getTime() <= endTimestamp && toDate.getTime() >= startTimestamp) {
+                    const budgetAmount = tempBudget.amount || 0;
+                    const spent = expensesBySubcategory[subcat] || 0;
+                    const diff = budgetAmount - spent;
+                    budgetRows.push([cat, subcat, budgetAmount.toString(), spent.toString(), diff.toString()]);
+                 }
+            }
+        });
+    });
+
+    const budgetHeaders = ["Categoría", "Subcategoría", "Presupuesto", "Gastado", "Diferencial"];
+    const budgetsCsv = toCsv(budgetHeaders, budgetRows);
+
+    // 3. Records CSV
     const recordsHeaders = ["Registro", "Descripción", "Monto"];
     const recordsRows = allRecords.flatMap(record => {
       if (!record.entries) return [];
@@ -229,12 +292,12 @@ export function FinancesDashboard() {
         return [];
       }
     });
+    const recordsCsv = toCsv(recordsHeaders, recordsRows);
 
     const csvContent = "\uFEFF" + 
-      "TRANSACCIONES\n" + 
-      toCsv(transHeaders, transRows) + "\n\n" +
-      "REGISTROS\n" + 
-      toCsv(recordsHeaders, recordsRows);
+      "TRANSACCIONES\n" + transCsv + "\n\n" +
+      "PRESUPUESTOS\n" + budgetsCsv + "\n\n" +
+      "REGISTROS\n" + recordsCsv;
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
