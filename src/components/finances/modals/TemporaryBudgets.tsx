@@ -33,17 +33,27 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
   useEffect(() => {
     const sanitized: TemporaryBudgets = {};
-    for (const subcat in tempBudgets) {
+    for (const cat in tempCategories) {
+      for (const subcat of tempCategories[cat]) {
         const budget = tempBudgets[subcat];
         if (budget) {
             sanitized[subcat] = {
                 ...budget,
                 amount: (typeof budget.amount === 'number' && !isNaN(budget.amount)) ? budget.amount : 0,
             };
+        } else {
+          // Ensure every subcategory has a placeholder in localBudgets
+          const today = new Date();
+          sanitized[subcat] = {
+              amount: 0,
+              from: { month: today.getMonth(), year: today.getFullYear() },
+              to: { month: today.getMonth(), year: today.getFullYear() },
+          };
         }
+      }
     }
     setLocalBudgets(sanitized);
-  }, [tempBudgets]);
+  }, [tempBudgets, tempCategories]);
 
   const expensesBySubcategory = useMemo(() => {
     const relevantSubcategories = new Set(Object.values(tempCategories).flat());
@@ -56,16 +66,20 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
       }, {} as { [key: string]: number });
   }, [transactions, tempCategories]);
   
-  const getActiveBudgetForCurrentDate = (subcategory: string): TemporaryBudget | null => {
+  const getActiveBudgetForCurrentDate = (subcategory: string, budgets: TemporaryBudgets): TemporaryBudget | null => {
     const month = currentDate.getMonth();
     const year = currentDate.getFullYear();
-    const budget = localBudgets[subcategory];
+    const budget = budgets[subcategory];
 
     if (!budget || !budget.from || !budget.to) return null;
+    if (typeof budget.from.year !== 'number' || typeof budget.from.month !== 'number' || 
+        typeof budget.to.year !== 'number' || typeof budget.to.month !== 'number') {
+        return null;
+    }
 
     const currentMonthDate = new Date(year, month, 1);
     const fromDate = new Date(budget.from.year, budget.from.month, 1);
-    const toDate = new Date(budget.to.year, budget.to.month + 1, 0);
+    const toDate = new Date(budget.to.year, budget.to.month + 1, 0); 
     
     if (currentMonthDate >= fromDate && currentMonthDate <= toDate) {
         return budget;
@@ -78,16 +92,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     setLocalBudgets(prev => {
         const newLocalBudgets = { ...prev };
         
-        if (!newLocalBudgets[subcategory]) {
-            const today = new Date();
-            newLocalBudgets[subcategory] = {
-                amount: 0,
-                from: { month: today.getMonth(), year: today.getFullYear() },
-                to: { month: today.getMonth(), year: today.getFullYear() },
-            };
-        }
-        
-        const budget = { ...newLocalBudgets[subcategory] };
+        const budget = { ...(newLocalBudgets[subcategory] || {}) };
 
         if (field === 'amount') {
             const numValue = parseFormattedNumber(value);
@@ -129,7 +134,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
           const sortedSubcategories = [...tempCategories[cat]].sort((a,b) => a.localeCompare(b));
           
           const categoryBudget = sortedSubcategories.reduce((sum, subcat) => {
-            const activeBudget = getActiveBudgetForCurrentDate(subcat);
+            const activeBudget = getActiveBudgetForCurrentDate(subcat, localBudgets);
             return sum + (activeBudget?.amount || 0);
           }, 0);
           
@@ -142,7 +147,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
               <CardHeader className="p-4">
                  <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{cat}</CardTitle>
-                   <span className="text-sm font-semibold text-muted-foreground">Total: {formatCurrency(categoryBudget)}</span>
                 </div>
                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
                   <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
@@ -160,7 +164,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                 <div className="space-y-4 sm:space-y-2">
                   {sortedSubcategories.map(subcat => {
                     const budget = localBudgets[subcat];
-                    const activeBudget = getActiveBudgetForCurrentDate(subcat);
+                    const activeBudget = getActiveBudgetForCurrentDate(subcat, localBudgets);
                     const spent = expensesBySubcategory[subcat] || 0;
                     const budgetAmount = activeBudget?.amount || 0;
                     const diff = budgetAmount - spent;
