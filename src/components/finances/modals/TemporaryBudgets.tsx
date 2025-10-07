@@ -47,23 +47,28 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     return transactions
       .filter(t => t.type === 'expense' && t.subcategory)
       .reduce((acc, t) => {
-        if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
-        acc[t.subcategory!] += t.amount;
+        const subcategoryKey = `${t.category}-${t.subcategory}`;
+        if(Object.values(tempCategories).flat().includes(t.subcategory!)) {
+            if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
+            acc[t.subcategory!] += t.amount;
+        }
         return acc;
       }, {} as { [key: string]: number });
-  }, [transactions]);
+  }, [transactions, tempCategories]);
 
-  const getBudgetForCurrentDate = (subcategory: string): TemporaryBudget | null => {
+  const getActiveBudgetForCurrentDate = (subcategory: string): TemporaryBudget | null => {
     const month = currentDate.getMonth();
     const year = currentDate.getFullYear();
     const budgets = localBudgets[subcategory];
 
     if (!budgets) return null;
 
+    const currentMonthDate = new Date(year, month, 1);
+
     for (const budget of budgets) {
       const fromDate = new Date(budget.from.year, budget.from.month, 1);
-      const toDate = new Date(budget.to.year, budget.to.month + 1, 0); // End of the month
-      if (currentDate >= fromDate && currentDate <= toDate) {
+      const toDate = new Date(budget.to.year, budget.to.month + 1, 0); // End of the 'to' month
+      if (currentMonthDate >= fromDate && currentMonthDate <= toDate) {
         return budget;
       }
     }
@@ -90,9 +95,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
   };
   
   const handlePeriodChange = (subcategory: string, index: number, field: 'amount' | 'from' | 'to', value: any) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     setLocalBudgets(prev => {
         const updatedPeriods = [...prev[subcategory]];
         const period = { ...updatedPeriods[index] };
@@ -100,15 +102,20 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
         if (field === 'amount') {
             period.amount = isNaN(parseFormattedNumber(value)) ? 0 : parseFormattedNumber(value);
         } else if (field === 'from' || field === 'to') {
-            const newDate = new Date(value.year, value.month, 1);
-            if (newDate < today) {
-                toast({ variant: 'destructive', title: 'Error', description: 'No se pueden establecer fechas anteriores al mes actual.' });
-                return prev;
-            }
             period[field] = value;
         }
 
         updatedPeriods[index] = period;
+
+        // Validation: "from" date cannot be after "to" date
+        const fromDate = new Date(period.from.year, period.from.month, 1);
+        const toDate = new Date(period.to.year, period.to.month, 1);
+
+        if(fromDate > toDate) {
+            toast({ variant: 'destructive', title: 'Error de Fechas', description: 'La fecha de inicio no puede ser posterior a la fecha de fin.' });
+            return prev; // Revert change if invalid
+        }
+
         return { ...prev, [subcategory]: updatedPeriods };
     });
   };
@@ -130,21 +137,38 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
         {Object.keys(tempCategories).sort((a,b) => a.localeCompare(b)).map(cat => {
           const sortedSubcategories = [...tempCategories[cat]].sort((a,b) => a.localeCompare(b));
           
+          const categoryBudget = sortedSubcategories.reduce((sum, subcat) => {
+            const activeBudget = getActiveBudgetForCurrentDate(subcat);
+            return sum + (activeBudget?.amount || 0);
+          }, 0);
+          
+          const categorySpent = sortedSubcategories.reduce((sum, subcat) => sum + (expensesBySubcategory[subcat] || 0), 0);
+          const categoryDifference = categoryBudget - categorySpent;
+          const differenceColor = categoryDifference >= 0 ? 'text-green-600' : 'text-red-600';
+
+
           return (
             <Card key={cat}>
               <CardHeader className="p-4">
-                <CardTitle className="text-lg">{cat}</CardTitle>
+                 <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg">{cat}</CardTitle>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
+                  <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
+                  <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
+                  <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
+                </div>
               </CardHeader>
-              <CardContent className="p-4 pt-0 space-y-4">
+              <CardContent className="p-4 pt-0">
                 {sortedSubcategories.map(subcat => {
-                    const activeBudget = getBudgetForCurrentDate(subcat);
+                    const activeBudget = getActiveBudgetForCurrentDate(subcat);
                     const spent = expensesBySubcategory[subcat] || 0;
                     const budgetAmount = activeBudget?.amount || 0;
                     const diff = budgetAmount - spent;
                     const diffColor = diff >= 0 ? 'text-green-600' : 'text-red-600';
 
                     return (
-                        <div key={subcat} className="p-3 rounded-md bg-muted/50">
+                        <div key={subcat} className="p-3 rounded-md border mb-2">
                             <div className="flex justify-between items-center">
                                 <h4 className="font-semibold">{subcat}</h4>
                                 <div className="flex gap-4 text-sm">
@@ -156,18 +180,18 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                             
                             <div className="mt-3 space-y-2">
                               {(localBudgets[subcat] || []).map((period, index) => (
-                                <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
-                                  <span className="font-semibold">Monto:</span>
+                                <div key={index} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                                  <span className="font-semibold text-sm">Monto:</span>
                                   <Input 
                                       value={formatNumber(period.amount)}
                                       onChange={(e) => handlePeriodChange(subcat, index, 'amount', e.target.value)}
-                                      className="h-8 w-28 text-right"
+                                      className="h-8 w-24 text-right text-sm"
                                   />
-                                   <span className="font-semibold">Desde:</span>
+                                  <span className="font-semibold text-sm">Desde:</span>
                                   <Select 
                                     value={`${period.from.month}`}
                                     onValueChange={(m) => handlePeriodChange(subcat, index, 'from', { ...period.from, month: parseInt(m) })}>
-                                    <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 w-[90px] text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
                                     </SelectContent>
@@ -175,17 +199,17 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                                   <Select
                                     value={`${period.from.year}`}
                                     onValueChange={(y) => handlePeriodChange(subcat, index, 'from', { ...period.from, year: parseInt(y) })}>
-                                    <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
 
-                                  <span className="font-semibold">Hasta:</span>
+                                  <span className="font-semibold text-sm">Hasta:</span>
                                   <Select 
                                     value={`${period.to.month}`}
                                     onValueChange={(m) => handlePeriodChange(subcat, index, 'to', { ...period.to, month: parseInt(m) })}>
-                                    <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 w-[90px] text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
                                     </SelectContent>
@@ -193,7 +217,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                                    <Select
                                     value={`${period.to.year}`}
                                     onValueChange={(y) => handlePeriodChange(subcat, index, 'to', { ...period.to, year: parseInt(y) })}>
-                                    <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
                                     </SelectContent>
