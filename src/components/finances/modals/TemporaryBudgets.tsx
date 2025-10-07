@@ -78,7 +78,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     setLocalBudgets(prev => {
         const newLocalBudgets = { ...prev };
         
-        // Ensure the subcategory budget exists before updating
         if (!newLocalBudgets[subcategory]) {
             const today = new Date();
             newLocalBudgets[subcategory] = {
@@ -99,11 +98,13 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
         newLocalBudgets[subcategory] = budget;
 
-        const fromDate = new Date(budget.from.year, budget.from.month, 1);
-        const toDate = new Date(budget.to.year, budget.to.month, 1);
+        if (budget.from && budget.to && typeof budget.from.year === 'number' && typeof budget.from.month === 'number' && typeof budget.to.year === 'number' && typeof budget.to.month === 'number') {
+          const fromDate = new Date(budget.from.year, budget.from.month, 1);
+          const toDate = new Date(budget.to.year, budget.to.month, 1);
 
-        if (fromDate > toDate) {
-            toast({ variant: 'destructive', title: 'Error de Fechas', description: 'La fecha de inicio no puede ser posterior a la fecha de fin.' });
+          if (fromDate > toDate) {
+              toast({ variant: 'destructive', title: 'Error de Fechas', description: 'La fecha de inicio no puede ser posterior a la fecha de fin.' });
+          }
         }
 
         return newLocalBudgets;
@@ -141,6 +142,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
               <CardHeader className="p-4">
                  <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{cat}</CardTitle>
+                   <span className="text-sm font-semibold text-muted-foreground">Total: {formatCurrency(categoryBudget)}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
                   <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
@@ -149,7 +151,13 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                 <div className="space-y-2">
+                 <div className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                  <div className="font-medium">Subcategoría</div>
+                  <div className="text-right font-medium">Gastado</div>
+                  <div className="text-right font-medium">Presupuesto</div>
+                  <div className="text-right font-medium">Diferencial</div>
+                </div>
+                <div className="space-y-2">
                   {sortedSubcategories.map(subcat => {
                     const budget = localBudgets[subcat];
                     const activeBudget = getActiveBudgetForCurrentDate(subcat);
@@ -164,16 +172,13 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                     const toYear = budget?.to?.year ?? currentDate.getFullYear();
                     
                     return (
-                        <div key={subcat} className="p-3 rounded-md border">
-                            <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold flex-1">{subcat}</h4>
-                                <div className="flex gap-4 text-sm">
-                                    <span className="font-semibold text-muted-foreground">Gastado: <span className="text-card-foreground">{formatCurrency(spent)}</span></span>
-                                    <span className="font-semibold text-muted-foreground">Presupuesto: <span className="text-card-foreground">{formatCurrency(budgetAmount)}</span></span>
-                                    <span className="font-semibold text-muted-foreground">Diferencial: <span className={diffColor}>{formatCurrency(diff)}</span></span>
-                                </div>
+                        <div key={subcat} className="grid grid-cols-[1fr_auto] gap-x-4 items-start text-sm px-2 py-2 rounded-md hover:bg-muted/50 border">
+                            <div className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center h-full">
+                                <label htmlFor={`budget-${subcat}`}>{subcat}</label>
+                                <div className="text-right">{formatCurrency(spent)}</div>
+                                <div className={`text-right font-medium`}>{formatCurrency(budgetAmount)}</div>
+                                <div className={`text-right font-medium ${diffColor}`}>{formatCurrency(diff)}</div>
                             </div>
-                            
                             <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
                                 <span className="font-semibold text-sm">Monto:</span>
                                 <Input 
