@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, ClipboardCopy } from 'lucide-react';
+import { Save } from 'lucide-react';
 import type { Categories, Budgets, Transaction } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -77,6 +77,29 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
     }
   };
 
+  const saveBudget = async (subcategory: string, amount: number) => {
+    try {
+        const budgetsRef = doc(db, "artifacts", appId, "public", "data", "budgets", "budgets");
+        await setDoc(budgetsRef, { [subcategory]: amount }, { merge: true });
+        toast({ title: 'Presupuesto guardado.' });
+    } catch (error) {
+        console.error("Error saving budget:", error);
+        toast({ variant: 'destructive', title: 'Error al guardar.' });
+    }
+  };
+
+  const handleSaveSubcategoryBudget = (subcategory: string) => {
+    const amount = localBudgets[subcategory] || 0;
+    const action = () => saveBudget(subcategory, amount);
+
+    if (isPastMonth) {
+        setPinCallback({ onConfirm: action });
+        setPinPromptOpen(true);
+    } else {
+        action();
+    }
+  };
+  
   const handleSaveBudgets = () => {
     const action = async () => {
       try {
@@ -164,8 +187,8 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                           />
                           <div className={`text-right font-medium ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</div>
                            <div className="text-right">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                              <ClipboardCopy className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => handleSaveSubcategoryBudget(subcat)}>
+                              <Save className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
