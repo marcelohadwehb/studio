@@ -78,16 +78,18 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     setLocalBudgets(prev => {
         const newLocalBudgets = { ...prev };
         
-        if (!newLocalBudgets[subcategory]) {
-            const today = new Date();
+        const currentBudget = newLocalBudgets[subcategory];
+        const today = new Date();
+
+        if (!currentBudget) {
             newLocalBudgets[subcategory] = {
                 amount: 0,
                 from: { month: today.getMonth(), year: today.getFullYear() },
                 to: { month: today.getMonth(), year: today.getFullYear() },
             };
         }
-
-        const budget = { ...newLocalBudgets[subcategory] };
+        
+        const budget = { ...(newLocalBudgets[subcategory] || {}) };
 
         if (field === 'amount') {
             const numValue = parseFormattedNumber(value);
@@ -96,7 +98,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
             budget[field] = value;
         }
 
-        newLocalBudgets[subcategory] = budget;
+        newLocalBudgets[subcategory] = budget as TemporaryBudget;
 
         if (budget.from && budget.to && typeof budget.from.year === 'number' && typeof budget.from.month === 'number' && typeof budget.to.year === 'number' && typeof budget.to.month === 'number') {
           const fromDate = new Date(budget.from.year, budget.from.month, 1);
@@ -144,20 +146,21 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                   <CardTitle className="text-lg">{cat}</CardTitle>
                    <span className="text-sm font-semibold text-muted-foreground">Total: {formatCurrency(categoryBudget)}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
                   <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
                   <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
                   <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                 <div className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                <div className="hidden sm:grid grid-cols-[1fr_80px_80px_80px_auto] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
                   <div className="font-medium">Subcategoría</div>
                   <div className="text-right font-medium">Gastado</div>
                   <div className="text-right font-medium">Presupuesto</div>
                   <div className="text-right font-medium">Diferencial</div>
+                  <div className="font-medium text-center">Período y Monto</div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-4 sm:space-y-2">
                   {sortedSubcategories.map(subcat => {
                     const budget = localBudgets[subcat];
                     const activeBudget = getActiveBudgetForCurrentDate(subcat);
@@ -172,57 +175,56 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                     const toYear = budget?.to?.year ?? currentDate.getFullYear();
                     
                     return (
-                        <div key={subcat} className="grid grid-cols-[1fr_auto] gap-x-4 items-start text-sm px-2 py-2 rounded-md hover:bg-muted/50 border">
-                            <div className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center h-full">
-                                <label htmlFor={`budget-${subcat}`}>{subcat}</label>
-                                <div className="text-right">{formatCurrency(spent)}</div>
-                                <div className={`text-right font-medium`}>{formatCurrency(budgetAmount)}</div>
-                                <div className={`text-right font-medium ${diffColor}`}>{formatCurrency(diff)}</div>
-                            </div>
-                            <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                                <span className="font-semibold text-sm">Monto:</span>
-                                <Input 
-                                    value={formatNumber(budget?.amount || 0)}
-                                    onChange={(e) => handleBudgetChange(subcat, 'amount', e.target.value)}
-                                    className="h-8 w-24 text-right text-sm"
-                                />
-                                <span className="font-semibold text-sm">Desde:</span>
-                                <Select 
-                                value={`${fromMonth}`}
-                                onValueChange={(m) => handleBudgetChange(subcat, 'from', { month: parseInt(m), year: fromYear })}>
-                                <SelectTrigger className="h-8 w-[90px] text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                                <Select
-                                value={`${fromYear}`}
-                                onValueChange={(y) => handleBudgetChange(subcat, 'from', { month: fromMonth, year: parseInt(y) })}>
-                                <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
+                      <div key={subcat} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_80px_80px_auto] gap-x-4 gap-y-2 items-center text-sm px-2 py-2 rounded-md hover:bg-muted/50 border sm:border-none">
+                        <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal">{subcat}</label>
+                        <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Gastado:</span> {formatCurrency(spent)}</div>
+                        <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Presupuesto:</span> {formatCurrency(budgetAmount)}</div>
+                        <div className={`text-right font-medium flex justify-between sm:block ${diffColor}`}><span className="sm:hidden text-muted-foreground">Diferencial:</span> {formatCurrency(diff)}</div>
+                        
+                        <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-muted/50 mt-2 sm:mt-0">
+                            <span className="font-semibold text-xs">Monto:</span>
+                            <Input 
+                                value={formatNumber(budget?.amount || 0)}
+                                onChange={(e) => handleBudgetChange(subcat, 'amount', e.target.value)}
+                                className="h-8 w-24 text-right text-xs"
+                            />
+                            <span className="font-semibold text-xs">Desde:</span>
+                            <Select 
+                            value={`${fromMonth}`}
+                            onValueChange={(m) => handleBudgetChange(subcat, 'from', { month: parseInt(m), year: fromYear })}>
+                            <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
+                            </SelectContent>
+                            </Select>
+                            <Select
+                            value={`${fromYear}`}
+                            onValueChange={(y) => handleBudgetChange(subcat, 'from', { month: fromMonth, year: parseInt(y) })}>
+                            <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
+                            </SelectContent>
+                            </Select>
 
-                                <span className="font-semibold text-sm">Hasta:</span>
-                                <Select 
-                                value={`${toMonth}`}
-                                onValueChange={(m) => handleBudgetChange(subcat, 'to', { month: parseInt(m), year: toYear })}>
-                                <SelectTrigger className="h-8 w-[90px] text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                                <Select
-                                value={`${toYear}`}
-                                onValueChange={(y) => handleBudgetChange(subcat, 'to', { month: toMonth, year: parseInt(y) })}>
-                                <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                            </div>
+                            <span className="font-semibold text-xs">Hasta:</span>
+                            <Select 
+                            value={`${toMonth}`}
+                            onValueChange={(m) => handleBudgetChange(subcat, 'to', { month: parseInt(m), year: toYear })}>
+                            <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
+                            </SelectContent>
+                            </Select>
+                            <Select
+                            value={`${toYear}`}
+                            onValueChange={(y) => handleBudgetChange(subcat, 'to', { month: toMonth, year: parseInt(y) })}>
+                            <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
+                            </SelectContent>
+                            </Select>
                         </div>
+                      </div>
                     );
                   })}
                 </div>
