@@ -32,6 +32,7 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, onUpdateTemp, for
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [amount, setAmount] = useState('0');
   const [editingTemp, setEditingTemp] = useState<TemporaryBudget | null>(null);
+  const { toast } = useToast();
 
   const handleSaveTempBudget = () => {
     if ((!dateRange?.from && !editingTemp) || parseFormattedNumber(amount) <= 0) {
@@ -211,6 +212,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
   const { toast } = useToast();
   
   useEffect(() => {
+    // Deep copy to prevent modifying the original prop object
     setLocalBudgets(JSON.parse(JSON.stringify(budgets)));
   }, [budgets, isOpen]);
 
