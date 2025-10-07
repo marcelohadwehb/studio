@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Save, ClipboardCopy } from 'lucide-react';
-import type { Transaction, Categories, Budgets } from '@/lib/types';
+import type { Categories, Budgets } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatNumber, parseFormattedNumber } from '@/lib/utils';
@@ -54,11 +54,13 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
   }, [currentDate]);
 
   const handleBudgetChange = (subcategory: string, value: string) => {
+    const amount = parseFormattedNumber(value);
+    const numericAmount = isNaN(amount) ? 0 : amount;
+
     const action = () => {
-      const amount = parseFormattedNumber(value);
       setLocalBudgets(prev => ({
         ...prev,
-        [subcategory]: amount,
+        [subcategory]: numericAmount,
       }));
     };
 
@@ -154,7 +156,6 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                             onChange={(e) => handleBudgetChange(subcat, e.target.value)}
                             className="h-8 text-right"
                             placeholder="0"
-                            readOnly={isPastMonth}
                           />
                           <div className={`text-right font-medium ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</div>
                            <div className="text-right">
