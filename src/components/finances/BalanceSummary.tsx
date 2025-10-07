@@ -11,7 +11,7 @@ export function BalanceSummary({ income, expenses, balance, formatCurrency }: Ba
   const balanceColor = balance >= 0 ? 'text-green-600' : 'text-red-600';
 
   return (
-    <section className="mb-6 bg-card rounded-lg p-4 shadow-sm border">
+    <section className="mb-6 bg-card rounded-lg p-4 shadow-sm border-2 border-primary">
       <h2 className="text-lg font-semibold text-center mb-3 text-card-foreground">Balance Mensual</h2>
       <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
         <div>
