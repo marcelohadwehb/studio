@@ -42,20 +42,26 @@ function TempBudgetPopover({ subcategory, budgetEntry, onSave, formatCurrency, d
 
     let newTemporaries = [...(budgetEntry.temporaries || [])];
     const newId = new Date().getTime().toString();
+    
+    // Use the start of the 'from' date and the end of the 'to' date (or 'from' if 'to' is not set)
+    const fromDate = dateRange?.from || (editingTemp ? new Date(editingTemp.startDate) : new Date());
+    const toDate = dateRange?.to || fromDate;
+
+    const startDate = startOfMonth(fromDate).getTime();
+    const endDate = endOfMonth(toDate).getTime();
+
 
     if (editingTemp) {
-      const from = dateRange?.from || new Date(editingTemp.startDate);
-      const to = dateRange?.to || new Date(editingTemp.endDate);
       newTemporaries = newTemporaries.map(t =>
         t.id === editingTemp.id
-          ? { ...t, startDate: startOfMonth(from).getTime(), endDate: endOfMonth(to || from).getTime(), amount: parseFormattedNumber(amount) }
+          ? { ...t, startDate, endDate, amount: parseFormattedNumber(amount) }
           : t
       );
     } else {
        newTemporaries.push({
         id: newId,
-        startDate: startOfMonth(dateRange!.from!).getTime(),
-        endDate: endOfMonth(dateRange!.to || dateRange!.from!).getTime(),
+        startDate,
+        endDate,
         amount: parseFormattedNumber(amount)
       });
     }
