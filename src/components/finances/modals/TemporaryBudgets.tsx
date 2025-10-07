@@ -33,23 +33,17 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
   useEffect(() => {
     const sanitized: TemporaryBudgets = {};
+    const today = new Date();
+    const defaultPeriod = { month: today.getMonth(), year: today.getFullYear() };
+
     for (const cat in tempCategories) {
       for (const subcat of tempCategories[cat]) {
         const budget = tempBudgets[subcat];
-        if (budget) {
-            sanitized[subcat] = {
-                ...budget,
-                amount: (typeof budget.amount === 'number' && !isNaN(budget.amount)) ? budget.amount : 0,
-            };
-        } else {
-          // Ensure every subcategory has a placeholder in localBudgets
-          const today = new Date();
-          sanitized[subcat] = {
-              amount: 0,
-              from: { month: today.getMonth(), year: today.getFullYear() },
-              to: { month: today.getMonth(), year: today.getFullYear() },
-          };
-        }
+        sanitized[subcat] = {
+            amount: budget?.amount && typeof budget.amount === 'number' ? budget.amount : 0,
+            from: budget?.from && typeof budget.from.year === 'number' ? budget.from : defaultPeriod,
+            to: budget?.to && typeof budget.to.year === 'number' ? budget.to : defaultPeriod,
+        };
       }
     }
     setLocalBudgets(sanitized);
@@ -66,7 +60,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
       }, {} as { [key: string]: number });
   }, [transactions, tempCategories]);
   
-  const getActiveBudgetForCurrentDate = (subcategory: string, budgets: TemporaryBudgets): TemporaryBudget | null => {
+ const getActiveBudgetForCurrentDate = (subcategory: string, budgets: TemporaryBudgets): TemporaryBudget | null => {
     const month = currentDate.getMonth();
     const year = currentDate.getFullYear();
     const budget = budgets[subcategory];
@@ -155,7 +149,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="hidden sm:grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                 <div className="hidden sm:grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
                   <div className="font-medium">Subcategoría</div>
                   <div className="text-right font-medium">Gastado</div>
                   <div className="text-right font-medium">Presupuesto</div>
