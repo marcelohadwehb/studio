@@ -123,6 +123,8 @@ export function SummaryView({
           {Object.keys(tempCategories).sort((a,b) => a.localeCompare(b)).map(cat => {
             const sortedSubcategories = [...tempCategories[cat]].sort((a,b) => a.localeCompare(b));
 
+            const isCategoryOutOfPeriod = sortedSubcategories.every(subcat => !getActiveBudgetForCurrentDate(subcat));
+
             const categoryBudget = sortedSubcategories.reduce((sum, subcat) => {
               const activeBudget = getActiveBudgetForCurrentDate(subcat);
               return sum + (activeBudget?.amount || 0);
@@ -135,8 +137,11 @@ export function SummaryView({
             return (
               <Card key={cat}>
                 <CardHeader className="p-4">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{cat}</CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        {cat}
+                        {isCategoryOutOfPeriod && <span className="text-xs font-normal text-muted-foreground">(fuera de periodo)</span>}
+                    </CardTitle>
                   </div>
                   <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
                     <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
