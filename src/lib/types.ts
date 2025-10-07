@@ -13,9 +13,22 @@ export interface Categories {
   [category: string]: string[];
 }
 
-export interface Budgets {
-  [subcategory: string]: number;
+export interface TempBudget {
+  id: string;
+  startDate: number;
+  endDate: number;
+  amount: number;
 }
+
+export interface BudgetEntry {
+  permanent: number;
+  temporary: TempBudget[];
+}
+
+export interface Budgets {
+  [subcategory: string]: BudgetEntry;
+}
+
 
 export interface RecordEntry {
   description: string;
