@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '../ConfirmationDialog';
 import { formatNumber, parseFormattedNumber } from '@/lib/utils';
@@ -26,6 +26,10 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
   const [newRecordName, setNewRecordName] = useState('');
   const [newEntry, setNewEntry] = useState<{ [key: string]: { description: string, amount: string } }>({});
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, onConfirm: () => void, message: string }>({ open: false, onConfirm: () => {}, message: '' });
+  
+  const [editingRecord, setEditingRecord] = useState<{ id: string; name: string } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<{ recordId: string; index: number; description: string; amount: string } | null>(null);
+
   const { toast } = useToast();
 
   const handleAddRecord = async () => {
@@ -55,6 +59,14 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
     });
   };
 
+  const handleUpdateRecordName = async () => {
+    if (editingRecord && editingRecord.name.trim()) {
+      await updateDoc(doc(db, "artifacts", appId, "public", "data", "records", editingRecord.id), { name: editingRecord.name });
+      setEditingRecord(null);
+      toast({ title: "Registro actualizado." });
+    }
+  };
+  
   const handleAddEntry = async (record: RecordItem) => {
     const entry = newEntry[record.id];
     if (entry?.description.trim() && parseFormattedNumber(entry.amount) > 0) {
@@ -71,6 +83,22 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
       await updateDoc(doc(db, "artifacts", appId, "public", "data", "records", record.id), { entries: JSON.stringify(updatedEntries) });
   };
   
+  const handleUpdateEntry = async (record: RecordItem) => {
+    if (!editingEntry) return;
+
+    const currentEntries: RecordEntry[] = JSON.parse(record.entries);
+    const updatedEntries = [...currentEntries];
+    updatedEntries[editingEntry.index] = {
+      description: editingEntry.description,
+      amount: parseFormattedNumber(editingEntry.amount),
+    };
+    
+    await updateDoc(doc(db, "artifacts", appId, "public", "data", "records", record.id), { entries: JSON.stringify(updatedEntries) });
+    setEditingEntry(null);
+    toast({ title: "Entrada actualizada." });
+  };
+
+
   const getRecordTotal = (record: RecordItem) => {
     try {
       const entries: RecordEntry[] = JSON.parse(record.entries);
@@ -111,25 +139,68 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
                 <AccordionItem value={record.id} key={record.id}>
                   <AccordionTrigger>
                     <div className="flex justify-between items-center w-full">
-                      <span className="font-semibold">{record.name}</span>
+                      {editingRecord?.id === record.id ? (
+                        <div className="flex gap-2 items-center flex-grow" onClick={(e) => e.stopPropagation()}>
+                          <Input
+                            value={editingRecord.name}
+                            onChange={(e) => setEditingRecord({ ...editingRecord, name: e.target.value })}
+                            className="h-8"
+                          />
+                          <Button size="icon" className="h-8 w-8" onClick={handleUpdateRecordName}><Save className="h-4 w-4"/></Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingRecord(null)}><X className="h-4 w-4"/></Button>
+                        </div>
+                      ) : (
+                        <span className="font-semibold">{record.name}</span>
+                      )}
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-muted-foreground">{formatCurrency(getRecordTotal(record))}</span>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteRecord(record.id); }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {editingRecord?.id !== record.id && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" onClick={(e) => { e.stopPropagation(); setEditingRecord({ id: record.id, name: record.name }); }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteRecord(record.id); }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pl-4 space-y-2">
                     {JSON.parse(record.entries).map((entry: RecordEntry, index: number) => (
                       <div key={index} className="flex items-center justify-between text-sm">
-                        <span>{entry.description}</span>
-                        <div className="flex items-center gap-2">
-                            <span>{formatCurrency(entry.amount)}</span>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteEntry(record, index)}>
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
+                        {editingEntry?.recordId === record.id && editingEntry.index === index ? (
+                           <div className="flex gap-2 items-center flex-grow" onClick={(e) => e.stopPropagation()}>
+                             <Input
+                                value={editingEntry.description}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, description: e.target.value })}
+                                className="h-8 flex-grow"
+                                placeholder="Descripción"
+                             />
+                             <Input
+                                value={editingEntry.amount}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, amount: formatNumber(parseFormattedNumber(e.target.value)) })}
+                                className="h-8 w-28"
+                                placeholder="Monto"
+                             />
+                             <Button size="icon" className="h-8 w-8" onClick={() => handleUpdateEntry(record)}><Save className="h-4 w-4"/></Button>
+                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingEntry(null)}><X className="h-4 w-4"/></Button>
+                           </div>
+                        ) : (
+                          <>
+                            <span>{entry.description}</span>
+                            <div className="flex items-center gap-2">
+                                <span>{formatCurrency(entry.amount)}</span>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-700" onClick={() => setEditingEntry({ recordId: record.id, index, description: entry.description, amount: formatNumber(entry.amount) })}>
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteEntry(record, index)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                     <div className="flex gap-2 items-center pt-2">
@@ -137,7 +208,7 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
                         placeholder="Nueva descripción"
                         className="h-8"
                         value={newEntry[record.id]?.description || ''}
-                        onChange={(e) => setNewEntry(prev => ({...prev, [record.id]: { ...prev[record.id], description: e.target.value }}))}
+                        onChange={(e) => setNewEntry(prev => ({...prev, [record.id]: { ...(prev[record.id] || {amount: '0'}), description: e.target.value }}))}
                       />
                        <Input
                         placeholder="Monto"
@@ -156,7 +227,11 @@ export function RecordsModal({ isOpen, onClose, records, appId, formatCurrency }
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cerrar</Button>
+            <Button type="button" variant="outline" onClick={() => {
+              onClose();
+              setEditingRecord(null);
+              setEditingEntry(null);
+            }}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
