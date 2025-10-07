@@ -43,7 +43,7 @@ export interface TemporaryBudget {
 }
 
 export interface TemporaryBudgets {
-  [subcategory: string]: TemporaryBudget[];
+  [subcategory: string]: TemporaryBudget;
 }
 
 export interface TemporaryCategories {
