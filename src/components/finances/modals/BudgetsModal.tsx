@@ -43,22 +43,25 @@ export function BudgetsModal({
             <DialogTitle className="text-2xl font-bold text-center">Gestión de Presupuestos</DialogTitle>
              <div className="flex justify-center flex-wrap gap-2 pt-4">
                <Button
+                size="sm"
                 variant={activeTab === 'summary' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('summary')}
               >
                 Resumen
               </Button>
               <Button
+                size="sm"
                 variant={activeTab === 'permanent' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('permanent')}
               >
-                Presupuestos Permanentes
+                Permanentes
               </Button>
               <Button
+                size="sm"
                 variant={activeTab === 'temporary' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('temporary')}
               >
-                Presupuestos Temporales
+                Temporales
               </Button>
             </div>
           </DialogHeader>

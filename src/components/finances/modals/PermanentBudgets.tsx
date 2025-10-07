@@ -124,25 +124,25 @@ export function PermanentBudgets({ categories, budgets, transactions, appId, for
           return (
             <Card key={cat}>
               <CardHeader className="p-4">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{cat}</CardTitle>
+                <div className="flex flex-col sm:flex-row justify-between sm:items-start">
+                  <CardTitle className="text-lg mb-2 sm:mb-0">{cat}</CardTitle>
                   <span className="text-sm font-semibold text-muted-foreground">Total: {formatCurrency(categoryBudget)}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
                   <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
                   <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
                   <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="grid grid-cols-[1fr_100px_100px_100px_40px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                <div className="hidden sm:grid grid-cols-[1fr_100px_100px_100px_40px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
                   <div className="font-medium">Subcategoría</div>
                   <div className="text-right font-medium">Gastado</div>
                   <div className="text-right font-medium">Presupuesto</div>
                   <div className="text-right font-medium">Diferencial</div>
                   <div></div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3 sm:space-y-2">
                   {sortedSubcategories.map(subcat => {
                     const subcatBudget = localBudgets[subcat] || 0;
                     const subcatSpent = expensesBySubcategory[subcat] || 0;
@@ -150,28 +150,39 @@ export function PermanentBudgets({ categories, budgets, transactions, appId, for
                     const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
                     
                     return (
-                      <div key={subcat} className="grid grid-cols-[1fr_100px_100px_100px_40px] gap-x-4 items-center text-sm px-2 py-1 rounded-md hover:bg-muted/50">
-                        <label htmlFor={`budget-${subcat}`}>{subcat}</label>
-                        <div className="text-right">{formatCurrency(subcatSpent)}</div>
-                        <Input
-                          id={`budget-${subcat}`}
-                          value={formatNumber(localBudgets[subcat])}
-                          onChange={(e) => handleBudgetChange(subcat, e.target.value)}
-                          className="h-8 text-right"
-                          placeholder="0"
-                          readOnly={isPastMonth && pastDateLock}
-                        />
-                        <div className={`text-right font-medium ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</div>
-                         <div className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            onClick={() => handleSaveSubcategoryBudget(subcat)}
-                            disabled={isPastMonth && pastDateLock}
-                          >
-                            <Save className="h-4 w-4" />
-                          </Button>
+                      <div key={subcat} className="text-sm px-2 py-2 sm:py-1 rounded-md hover:bg-muted/50 border sm:border-none">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px_40px] sm:gap-x-4 items-center">
+                          <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal">{subcat}</label>
+                          <div className="text-right flex justify-between items-center sm:block mt-2 sm:mt-0">
+                              <span className='sm:hidden text-muted-foreground'>Gastado:</span>
+                              <span>{formatCurrency(subcatSpent)}</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-2 sm:mt-0">
+                            <span className='sm:hidden text-muted-foreground'>Presupuesto:</span>
+                            <Input
+                              id={`budget-${subcat}`}
+                              value={formatNumber(localBudgets[subcat])}
+                              onChange={(e) => handleBudgetChange(subcat, e.target.value)}
+                              className="h-8 text-right w-24"
+                              placeholder="0"
+                              readOnly={isPastMonth && pastDateLock}
+                            />
+                          </div>
+                          <div className={`text-right font-medium flex justify-between items-center sm:block mt-2 sm:mt-0 ${subcatDiffColor}`}>
+                              <span className='sm:hidden text-muted-foreground'>Diferencial:</span>
+                              <span>{formatCurrency(subcatDiff)}</span>
+                          </div>
+                          <div className="text-right mt-2 sm:mt-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleSaveSubcategoryBudget(subcat)}
+                              disabled={isPastMonth && pastDateLock}
+                            >
+                              <Save className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )

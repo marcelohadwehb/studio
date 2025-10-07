@@ -76,23 +76,21 @@ export function SummaryView({
             return (
               <Card key={cat}>
                 <CardHeader className="p-4">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{cat}</CardTitle>
-                  </div>
-                   <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
+                  <CardTitle className="text-lg">{cat}</CardTitle>
+                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
                     <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
                     <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
                     <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <div className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                  <div className="hidden sm:grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
                     <div className="font-medium">Subcategoría</div>
                     <div className="text-right font-medium">Gastado</div>
                     <div className="text-right font-medium">Presupuesto</div>
                     <div className="text-right font-medium">Diferencial</div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3 sm:space-y-2">
                     {sortedSubcategories.map(subcat => {
                       const subcatBudget = budgets[subcat] || 0;
                       const subcatSpent = expensesBySubcategory[subcat] || 0;
@@ -100,11 +98,11 @@ export function SummaryView({
                       const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
                       
                       return (
-                        <div key={subcat} className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-sm px-2 py-1 rounded-md hover:bg-muted/50">
-                          <div>{subcat}</div>
-                          <div className="text-right">{formatCurrency(subcatSpent)}</div>
-                          <div className="text-right">{formatCurrency(subcatBudget)}</div>
-                          <div className={`text-right font-medium ${subcatDiffColor}`}>{formatCurrency(subcatDiff)}</div>
+                        <div key={subcat} className="grid grid-cols-2 sm:grid-cols-[1fr_100px_100px_100px] sm:gap-x-4 items-center text-sm sm:px-2 py-2 sm:py-1 rounded-md hover:bg-muted/50 border-b sm:border-none">
+                          <div className="font-medium sm:font-normal col-span-2 sm:col-span-1">{subcat}</div>
+                          <div className="text-right"><span className="sm:hidden text-muted-foreground">Gastado: </span>{formatCurrency(subcatSpent)}</div>
+                          <div className="text-right"><span className="sm:hidden text-muted-foreground">Presupuesto: </span>{formatCurrency(subcatBudget)}</div>
+                          <div className={`text-right font-medium ${subcatDiffColor}`}><span className="sm:hidden text-muted-foreground">Diferencial: </span>{formatCurrency(subcatDiff)}</div>
                         </div>
                       )
                     })}
@@ -143,20 +141,20 @@ export function SummaryView({
                         {isCategoryOutOfPeriod && <span className="text-xs font-normal text-muted-foreground">(fuera de periodo)</span>}
                     </CardTitle>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
                     <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
                     <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
                     <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <div className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                  <div className="hidden sm:grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
                     <div className="font-medium">Subcategoría</div>
                     <div className="text-right font-medium">Gastado</div>
                     <div className="text-right font-medium">Presupuesto</div>
                     <div className="text-right font-medium">Diferencial</div>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3 sm:space-y-2">
                     {sortedSubcategories.map(subcat => {
                       const activeBudget = getActiveBudgetForCurrentDate(subcat);
                       const spent = expensesBySubcategory[subcat] || 0;
@@ -165,11 +163,11 @@ export function SummaryView({
                       const diffColor = diff >= 0 ? 'text-green-600' : 'text-red-600';
 
                       return (
-                        <div key={subcat} className="grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-sm px-2 py-1 rounded-md hover:bg-muted/50">
-                          <div>{subcat}</div>
-                          <div className="text-right">{formatCurrency(spent)}</div>
-                          <div className="text-right">{formatCurrency(budgetAmount)}</div>
-                          <div className={`text-right font-medium ${diffColor}`}>{formatCurrency(diff)}</div>
+                        <div key={subcat} className="grid grid-cols-2 sm:grid-cols-[1fr_100px_100px_100px] sm:gap-x-4 items-center text-sm sm:px-2 py-2 sm:py-1 rounded-md hover:bg-muted/50 border-b sm:border-none">
+                          <div className="font-medium sm:font-normal col-span-2 sm:col-span-1">{subcat}</div>
+                          <div className="text-right"><span className="sm:hidden text-muted-foreground">Gastado: </span>{formatCurrency(spent)}</div>
+                          <div className="text-right"><span className="sm:hidden text-muted-foreground">Presupuesto: </span>{formatCurrency(budgetAmount)}</div>
+                          <div className={`text-right font-medium ${diffColor}`}><span className="sm:hidden text-muted-foreground">Diferencial: </span>{formatCurrency(diff)}</div>
                         </div>
                       )
                     })}
