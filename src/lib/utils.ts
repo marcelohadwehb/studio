@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatNumber(value: number | string): string {
+export function formatNumber(value: number | string | null | undefined): string {
   if (value === '' || value === null || value === undefined) return '0';
   const num = typeof value === 'string' ? parseFormattedNumber(value) : value;
   if (isNaN(num)) return '0';

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Save, ClipboardCopy } from 'lucide-react';
-import type { Categories, Budgets } from '@/lib/types';
+import type { Categories, Budgets, Transaction } from '@/lib/types';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatNumber, parseFormattedNumber } from '@/lib/utils';
@@ -33,7 +33,12 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
 
   useEffect(() => {
     if (isOpen) {
-      setLocalBudgets({ ...budgets });
+      const sanitizedBudgets: Budgets = {};
+      for (const key in budgets) {
+        const value = budgets[key];
+        sanitizedBudgets[key] = (typeof value === 'number' && !isNaN(value)) ? value : 0;
+      }
+      setLocalBudgets(sanitizedBudgets);
     }
   }, [budgets, isOpen]);
 
@@ -152,7 +157,7 @@ export function BudgetsModal({ isOpen, onClose, categories, budgets, transaction
                           <div className="text-right">{formatCurrency(subcatSpent)}</div>
                           <Input
                             id={`budget-${subcat}`}
-                            value={formatNumber(subcatBudget)}
+                            value={formatNumber(localBudgets[subcat])}
                             onChange={(e) => handleBudgetChange(subcat, e.target.value)}
                             className="h-8 text-right"
                             placeholder="0"
