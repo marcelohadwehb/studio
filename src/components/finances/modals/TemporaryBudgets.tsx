@@ -36,7 +36,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     const today = new Date();
     const defaultPeriod = { month: today.getMonth(), year: today.getFullYear() };
 
-    // Ensure every subcategory from tempCategories has an entry in localBudgets
     for (const cat in tempCategories) {
       for (const subcat of tempCategories[cat]) {
         const existingBudget = tempBudgets[subcat];
@@ -143,9 +142,9 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                   <CardTitle className="text-lg">{cat}</CardTitle>
                 </div>
                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground pt-2">
-                  <div>Presupuesto: <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
-                  <div>Gastado: <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
-                  <div>Diferencial: <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
+                  <div><span className="font-semibold">Presupuesto:</span> <span className="font-semibold text-card-foreground">{formatCurrency(categoryBudget)}</span></div>
+                  <div><span className="font-semibold">Gastado:</span> <span className="font-semibold text-card-foreground">{formatCurrency(categorySpent)}</span></div>
+                  <div><span className="font-semibold">Diferencial:</span> <span className={`font-semibold ${differenceColor}`}>{formatCurrency(categoryDifference)}</span></div>
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
@@ -171,54 +170,59 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                     
                     return (
                       <div key={subcat} className="border sm:border-none p-2 sm:p-0 rounded-md">
-                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-sm px-2 py-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px] sm:gap-x-4 items-center text-sm sm:px-2 sm:py-1">
                           <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal">{subcat}</label>
-                           <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Gastado:</span>{formatCurrency(spent)}</div>
+                           <div className="text-right flex justify-between sm:block mt-2 sm:mt-0"><span className="sm:hidden text-muted-foreground">Gastado:</span>{formatCurrency(spent)}</div>
                           <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Presupuesto:</span>{formatCurrency(budgetAmount)}</div>
                           <div className={`text-right font-medium flex justify-between sm:block ${diffColor}`}><span className="sm:hidden text-muted-foreground">Diferencial:</span>{formatCurrency(diff)}</div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-muted/50 mt-2">
-                            <span className="font-semibold text-xs">Monto:</span>
-                            <Input 
-                                value={formatNumber(budget?.amount || 0)}
-                                onChange={(e) => handleBudgetChange(subcat, 'amount', e.target.value)}
-                                className="h-8 w-24 text-right text-xs"
-                            />
-                            <span className="font-semibold text-xs">Desde:</span>
-                            <Select 
-                            value={`${fromMonth}`}
-                            onValueChange={(m) => handleBudgetChange(subcat, 'from', { month: parseInt(m), year: fromYear })}>
-                            <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
-                            </SelectContent>
-                            </Select>
-                            <Select
-                            value={`${fromYear}`}
-                            onValueChange={(y) => handleBudgetChange(subcat, 'from', { month: fromMonth, year: parseInt(y) })}>
-                            <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
-                            </SelectContent>
-                            </Select>
-
-                            <span className="font-semibold text-xs">Hasta:</span>
-                            <Select 
-                            value={`${toMonth}`}
-                            onValueChange={(m) => handleBudgetChange(subcat, 'to', { month: parseInt(m), year: toYear })}>
-                            <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
-                            </SelectContent>
-                            </Select>
-                            <Select
-                            value={`${toYear}`}
-                            onValueChange={(y) => handleBudgetChange(subcat, 'to', { month: toMonth, year: parseInt(y) })}>
-                            <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
-                            </SelectContent>
-                            </Select>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 border sm:border-0 rounded-md bg-muted/50 mt-2">
+                            <div className='flex items-center gap-2'>
+                              <span className="font-semibold text-xs">Monto:</span>
+                              <Input 
+                                  value={formatNumber(budget?.amount || 0)}
+                                  onChange={(e) => handleBudgetChange(subcat, 'amount', e.target.value)}
+                                  className="h-8 w-24 text-right text-xs"
+                              />
+                            </div>
+                            <div className='flex items-center gap-2 flex-wrap'>
+                              <span className="font-semibold text-xs">Desde:</span>
+                              <Select 
+                              value={`${fromMonth}`}
+                              onValueChange={(m) => handleBudgetChange(subcat, 'from', { month: parseInt(m), year: fromYear })}>
+                              <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
+                              </SelectContent>
+                              </Select>
+                              <Select
+                              value={`${fromYear}`}
+                              onValueChange={(y) => handleBudgetChange(subcat, 'from', { month: fromMonth, year: parseInt(y) })}>
+                              <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
+                              </SelectContent>
+                              </Select>
+                            </div>
+                            <div className='flex items-center gap-2 flex-wrap'>
+                              <span className="font-semibold text-xs">Hasta:</span>
+                              <Select 
+                              value={`${toMonth}`}
+                              onValueChange={(m) => handleBudgetChange(subcat, 'to', { month: parseInt(m), year: toYear })}>
+                              <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {months.map((m, i) => <SelectItem key={m} value={`${i}`}>{m}</SelectItem>)}
+                              </SelectContent>
+                              </Select>
+                              <Select
+                              value={`${toYear}`}
+                              onValueChange={(y) => handleBudgetChange(subcat, 'to', { month: toMonth, year: parseInt(y) })}>
+                              <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {years.map(y => <SelectItem key={y} value={`${y}`}>{y}</SelectItem>)}
+                              </SelectContent>
+                              </Select>
+                            </div>
                         </div>
                       </div>
                     );

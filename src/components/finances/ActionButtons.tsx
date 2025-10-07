@@ -21,7 +21,7 @@ export function ActionButtons({ onOpenModal }: ActionButtonsProps) {
         <Button
           key={btn.id}
           onClick={() => onOpenModal(btn.id)}
-          className={`font-semibold py-2 px-3 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-xs sm:text-sm h-14 whitespace-normal ${btn.className}`}
+          className={`font-semibold py-2 px-3 rounded-full shadow-lg transition-transform duration-200 transform hover:scale-105 text-xs sm:text-sm h-12 sm:h-14 whitespace-normal ${btn.className}`}
         >
           {btn.label}
         </Button>

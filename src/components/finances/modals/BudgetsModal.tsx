@@ -34,14 +34,14 @@ export function BudgetsModal({
   tempBudgets,
   tempCategories,
 }: BudgetsModalProps) {
-  const [activeTab, setActiveTab] = useState<'permanent' | 'temporary' | 'summary'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'permanent' | 'temporary'>('summary');
 
   return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="sm:max-w-4xl w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">Gestión de Presupuestos</DialogTitle>
-             <div className="flex justify-center gap-2 pt-4">
+             <div className="flex justify-center flex-wrap gap-2 pt-4">
                <Button
                 variant={activeTab === 'summary' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('summary')}
