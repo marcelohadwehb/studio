@@ -65,7 +65,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
     const currentMonthDate = new Date(year, month, 1);
     const fromDate = new Date(budget.from.year, budget.from.month, 1);
-    const toDate = new Date(budget.to.year, budget.to.month + 1, 0); // End of the 'to' month
+    const toDate = new Date(budget.to.year, budget.to.month + 1, 0);
     
     if (currentMonthDate >= fromDate && currentMonthDate <= toDate) {
         return budget;
@@ -78,7 +78,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
     setLocalBudgets(prev => {
         const newLocalBudgets = { ...prev };
         
-        // Ensure the subcategory exists in localBudgets, if not, initialize it.
         if (!newLocalBudgets[subcategory]) {
             const today = new Date();
             newLocalBudgets[subcategory] = {
@@ -99,7 +98,6 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
 
         newLocalBudgets[subcategory] = budget;
 
-        // Perform date validation only if both from and to dates are fully defined.
         if (budget.from && budget.to && typeof budget.from.year === 'number' && typeof budget.from.month === 'number' && typeof budget.to.year === 'number' && typeof budget.to.month === 'number') {
           const fromDate = new Date(budget.from.year, budget.from.month, 1);
           const toDate = new Date(budget.to.year, budget.to.month, 1);
@@ -153,7 +151,7 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="hidden sm:grid grid-cols-[1fr_80px_80px_80px_auto] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
+                <div className="hidden sm:grid grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-xs text-muted-foreground mb-2 px-2">
                   <div className="font-medium">Subcategoría</div>
                   <div className="text-right font-medium">Gastado</div>
                   <div className="text-right font-medium">Presupuesto</div>
@@ -174,13 +172,14 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                     const toYear = budget?.to?.year ?? currentDate.getFullYear();
                     
                     return (
-                      <div key={subcat} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_80px_80px_auto] gap-x-4 gap-y-2 items-center text-sm px-2 py-2 rounded-md hover:bg-muted/50 border sm:border-none">
-                        <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal">{subcat}</label>
-                        <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Gastado:</span> {formatCurrency(spent)}</div>
-                        <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Presupuesto:</span> {formatCurrency(budgetAmount)}</div>
-                        <div className={`text-right font-medium flex justify-between sm:block ${diffColor}`}><span className="sm:hidden text-muted-foreground">Diferencial:</span> {formatCurrency(diff)}</div>
-                        
-                        <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-muted/50 mt-2 sm:mt-0">
+                      <div key={subcat} className="border sm:border-none p-2 sm:p-0 rounded-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px] gap-x-4 items-center text-sm px-2 py-1">
+                          <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal">{subcat}</label>
+                           <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Gastado:</span>{formatCurrency(spent)}</div>
+                          <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Presupuesto:</span>{formatCurrency(budgetAmount)}</div>
+                          <div className={`text-right font-medium flex justify-between sm:block ${diffColor}`}><span className="sm:hidden text-muted-foreground">Diferencial:</span>{formatCurrency(diff)}</div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-muted/50 mt-2">
                             <span className="font-semibold text-xs">Monto:</span>
                             <Input 
                                 value={formatNumber(budget?.amount || 0)}
