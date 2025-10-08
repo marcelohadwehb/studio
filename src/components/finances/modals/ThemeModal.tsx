@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { AppTheme, applyTheme, getDefaultTheme, presetThemes, PresetTheme } from '@/lib/theme';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Paintbrush, Check } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -57,27 +57,43 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
     toast({ title: 'Tema restablecido', description: 'Se ha cargado el tema por defecto.' });
   };
   
-  const ColorInput = ({ label, id, value, onChange }: { label: string, id: keyof AppTheme, value: string, onChange: (id: keyof AppTheme, value: string) => void }) => (
-    <div className="flex items-center justify-between gap-4">
-      <Label htmlFor={`${id}-color`} className="font-semibold text-sm">{label}</Label>
-      <div className="flex items-center gap-2 border rounded-md p-1">
-        <Input 
-          id={`${id}-color-picker`} 
-          type="color" 
-          value={value}
-          onChange={(e) => onChange(id, e.target.value)}
-          className="h-7 w-7 p-0 border-none cursor-pointer"
-        />
-        <Input 
-          id={`${id}-color`}
-          type="text" 
-          value={value}
-          onChange={(e) => onChange(id, e.target.value)}
-          className="h-7 w-20 border-none focus:ring-0 text-sm"
-        />
+  const ColorInput = ({ label, id, value, onChange }: { label: string, id: keyof AppTheme, value: string, onChange: (id: keyof AppTheme, value: string) => void }) => {
+    const quickColors = presetThemes.map(p => p.colors[id]).slice(0, 5);
+    
+    return (
+      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 sm:gap-4">
+        <Label htmlFor={`${id}-color`} className="font-semibold text-sm truncate">{label}</Label>
+        <div className="flex items-center gap-2 border rounded-md p-1 bg-background">
+          <Input 
+            id={`${id}-color-picker`} 
+            type="color" 
+            value={value}
+            onChange={(e) => onChange(id, e.target.value)}
+            className="h-7 w-7 p-0 border-none cursor-pointer"
+            aria-label={`Seleccionar color para ${label}`}
+          />
+        </div>
+        <div className="flex items-center gap-1.5">
+          {quickColors.map((color, index) => (
+             <TooltipProvider key={index}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="h-6 w-6 rounded-full border cursor-pointer"
+                    style={{ backgroundColor: color }}
+                    onClick={() => onChange(id, color)}
+                    aria-label={`Seleccionar color predefinido ${color}`}
+                  />
+                </TooltipTrigger>
+                <TooltipContent><p>{color}</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -92,7 +108,6 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-          {/* Preview Section */}
           <div className="space-y-4">
             <h3 className="font-bold text-center text-lg">Previsualización de Componentes</h3>
             <Card className="p-4 space-y-4" style={{ 
@@ -123,7 +138,6 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
             </Card>
           </div>
 
-          {/* Customization Section */}
           <div className="space-y-6">
             <div>
               <h3 className="font-bold text-center text-lg mb-3">Paletas Predefinidas</h3>
@@ -167,20 +181,22 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
             
             <div>
                <h3 className="font-bold text-center text-lg mb-3">Personalización Manual</h3>
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 bg-muted/50 p-4 rounded-lg">
-                <ColorInput label="Principal (títulos, íconos)" id="primary" value={theme.primary} onChange={handleColorChange} />
-                <ColorInput label="Borde del Balance" id="balanceBorder" value={theme.balanceBorder} onChange={handleColorChange} />
-                <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
-                <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
-                <div className="sm:col-span-2 my-1"><hr className="border-border" /></div>
-                <ColorInput label="Botón Principal (Guardar)" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
-                <ColorInput label="Botón Gráfico" id="buttonChart" value={theme.buttonChart} onChange={handleColorChange} />
-                <ColorInput label="Botón Ingreso" id="buttonIncome" value={theme.buttonIncome} onChange={handleColorChange} />
-                <ColorInput label="Botón Gasto" id="buttonExpense" value={theme.buttonExpense} onChange={handleColorChange} />
-                <ColorInput label="Botón Presupuesto" id="buttonBudget" value={theme.buttonBudget} onChange={handleColorChange} />
-                <ColorInput label="Botón Registros" id="buttonRecords" value={theme.buttonRecords} onChange={handleColorChange} />
-                <ColorInput label="Botón Categorías" id="buttonCategories" value={theme.buttonCategories} onChange={handleColorChange} />
-               </div>
+                <Card>
+                  <CardContent className="p-4 space-y-3">
+                    <ColorInput label="Principal (títulos, íconos)" id="primary" value={theme.primary} onChange={handleColorChange} />
+                    <ColorInput label="Borde del Balance" id="balanceBorder" value={theme.balanceBorder} onChange={handleColorChange} />
+                    <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
+                    <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
+                    <div className="my-1"><hr className="border-border" /></div>
+                    <ColorInput label="Botón Principal (Guardar)" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
+                    <ColorInput label="Botón Gráfico" id="buttonChart" value={theme.buttonChart} onChange={handleColorChange} />
+                    <ColorInput label="Botón Ingreso" id="buttonIncome" value={theme.buttonIncome} onChange={handleColorChange} />
+                    <ColorInput label="Botón Gasto" id="buttonExpense" value={theme.buttonExpense} onChange={handleColorChange} />
+                    <ColorInput label="Botón Presupuesto" id="buttonBudget" value={theme.buttonBudget} onChange={handleColorChange} />
+                    <ColorInput label="Botón Registros" id="buttonRecords" value={theme.buttonRecords} onChange={handleColorChange} />
+                    <ColorInput label="Botón Categorías" id="buttonCategories" value={theme.buttonCategories} onChange={handleColorChange} />
+                  </CardContent>
+                </Card>
             </div>
           </div>
         </div>
