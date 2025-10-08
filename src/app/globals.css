@@ -10,20 +10,27 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 200 82% 50%; /* Sky Blue */
+    --primary: 217 91% 60%; /* Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 67% 94%; /* #E6E6FA Soft Lavender */
+    --accent: 217 91% 96%; /* Soft Blue */
     --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 200 82% 50%;
+    --ring: 217 91% 60%;
     --radius: 0.5rem;
+
+    /* Custom Theme Variables */
+    --button-primary: 217 91% 60%;
+    --button-primary-foreground: 210 40% 98%;
+    --chart-1: 217 91% 60%; /* Blue */
+    --chart-2: 0 84% 60%; /* Red */
+    --chart-3: 142 71% 45%; /* Green */
   }
  
   .dark {
@@ -33,19 +40,26 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 200 71% 73%;
+    --primary: 217 91% 73%;
     --primary-foreground: 240 5.9% 10%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 240 30% 20%;
+    --accent: 217 30% 20%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 200 71% 73%;
+    --ring: 217 91% 73%;
+    
+    /* Custom Theme Variables */
+    --button-primary: 217 91% 73%;
+    --button-primary-foreground: 240 5.9% 10%;
+    --chart-1: 217 91% 73%;
+    --chart-2: 0 72% 51%;
+    --chart-3: 142 71% 45%;
   }
 }
  

@@ -2,7 +2,80 @@ export interface AppTheme {
   primary: string;
   background: string;
   accent: string;
+  buttonPrimary: string;
+  chart1: string;
+  chart2: string;
+  chart3: string;
 }
+
+export interface PresetTheme {
+  name: string;
+  colors: AppTheme;
+}
+
+export const presetThemes: PresetTheme[] = [
+  {
+    name: 'Pastel',
+    colors: {
+      primary: '#a2d2ff',
+      background: '#fefae0',
+      accent: '#bde0fe',
+      buttonPrimary: '#a2d2ff',
+      chart1: '#ffc8dd',
+      chart2: '#cdb4db',
+      chart3: '#bde0fe',
+    },
+  },
+  {
+    name: 'Océano',
+    colors: {
+      primary: '#0077b6',
+      background: '#eaf4f4',
+      accent: '#90e0ef',
+      buttonPrimary: '#0077b6',
+      chart1: '#00b4d8',
+      chart2: '#48cae4',
+      chart3: '#ade8f4',
+    },
+  },
+  {
+    name: 'Neón',
+    colors: {
+      primary: '#f72585',
+      background: '#1f1f1f',
+      accent: '#7209b7',
+      buttonPrimary: '#f72585',
+      chart1: '#3a0ca3',
+      chart2: '#4cc9f0',
+      chart3: '#f72585',
+    },
+  },
+  {
+    name: 'Bosque',
+    colors: {
+      primary: '#588157',
+      background: '#f0ead2',
+      accent: '#a3b18a',
+      buttonPrimary: '#588157',
+      chart1: '#3a5a40',
+      chart2: '#344e41',
+      chart3: '#a3b18a',
+    },
+  },
+  {
+    name: 'Atardecer',
+    colors: {
+      primary: '#f77f00',
+      background: '#fff3e0',
+      accent: '#fcbf49',
+      buttonPrimary: '#f77f00',
+      chart1: '#d62828',
+      chart2: '#fcbf49',
+      chart3: '#eae2b7',
+    },
+  },
+];
+
 
 function hexToHsl(hex: string): [number, number, number] | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -46,32 +119,38 @@ function getRootElement(): HTMLElement | null {
   return document.documentElement;
 }
 
+const setCssVar = (root: HTMLElement, varName: string, hexColor: string) => {
+    const hsl = hexToHsl(hexColor);
+    if (hsl) {
+        root.style.setProperty(varName, `${hsl[0]} ${hsl[1]}% ${hsl[2]}%`);
+        if (varName === '--primary' || varName === '--button-primary') {
+            const fg = hsl[2] > 50 ? '0 0% 10%' : '0 0% 98%';
+            root.style.setProperty(`${varName}-foreground`, fg);
+        }
+    }
+};
+
 export function applyTheme(theme: AppTheme) {
   const root = getRootElement();
   if (!root) return;
 
-  const primaryHsl = hexToHsl(theme.primary);
-  const backgroundHsl = hexToHsl(theme.background);
-  const accentHsl = hexToHsl(theme.accent);
+  setCssVar(root, '--primary', theme.primary);
+  setCssVar(root, '--background', theme.background);
+  setCssVar(root, '--accent', theme.accent);
+  setCssVar(root, '--button-primary', theme.buttonPrimary);
+  setCssVar(root, '--chart-1', theme.chart1);
+  setCssVar(root, '--chart-2', theme.chart2);
+  setCssVar(root, '--chart-3', theme.chart3);
 
+  const primaryHsl = hexToHsl(theme.primary);
   if (primaryHsl) {
-    root.style.setProperty('--primary', `${primaryHsl[0]} ${primaryHsl[1]}% ${primaryHsl[2]}%`);
-    // A simple foreground logic
-    const primaryFg = primaryHsl[2] > 50 ? '0 0% 10%' : '0 0% 98%';
-    root.style.setProperty('--primary-foreground', primaryFg);
     root.style.setProperty('--ring', `${primaryHsl[0]} ${primaryHsl[1]}% ${primaryHsl[2]}%`);
   }
-
+  
+  const backgroundHsl = hexToHsl(theme.background);
   if (backgroundHsl) {
-    root.style.setProperty('--background', `${backgroundHsl[0]} ${backgroundHsl[1]}% ${backgroundHsl[2]}%`);
-     const backgroundFg = backgroundHsl[2] > 50 ? '0 0% 10%' : '0 0% 98%';
-    root.style.setProperty('--foreground', backgroundFg);
-  }
-
-  if (accentHsl) {
-    root.style.setProperty('--accent', `${accentHsl[0]} ${accentHsl[1]}% ${accentHsl[2]}%`);
-     const accentFg = accentHsl[2] > 50 ? '0 0% 10%' : '0 0% 98%';
-    root.style.setProperty('--accent-foreground', accentFg);
+    const bgFg = backgroundHsl[2] > 50 ? '0 0% 10%' : '0 0% 98%';
+    root.style.setProperty('--foreground', bgFg);
   }
 }
 
@@ -79,25 +158,37 @@ export function getDefaultTheme(): AppTheme {
     const root = getRootElement();
     if (!root) {
         return {
-            primary: hslToHex(200, 82, 50),
-            background: hslToHex(220, 13, 96),
-            accent: hslToHex(240, 67, 94),
+            primary: '#3b82f6',
+            background: '#f0f0f0',
+            accent: '#e0e7ff',
+            buttonPrimary: '#3b82f6',
+            chart1: '#3b82f6',
+            chart2: '#ef4444',
+            chart3: '#22c55e',
         };
     }
     const computedStyle = getComputedStyle(root);
     
     const parseHsl = (hslStr: string): [number, number, number] => {
-        const [h, s, l] = hslStr.trim().split(' ').map(parseFloat);
+        const [h, s, l] = hslStr.trim().replace(/%/g, '').split(' ').map(parseFloat);
         return [h, s, l];
     };
 
     const primaryHsl = parseHsl(computedStyle.getPropertyValue('--primary').trim());
     const backgroundHsl = parseHsl(computedStyle.getPropertyValue('--background').trim());
     const accentHsl = parseHsl(computedStyle.getPropertyValue('--accent').trim());
+    const buttonPrimaryHsl = parseHsl(computedStyle.getPropertyValue('--button-primary').trim());
+    const chart1Hsl = parseHsl(computedStyle.getPropertyValue('--chart-1').trim());
+    const chart2Hsl = parseHsl(computedStyle.getPropertyValue('--chart-2').trim());
+    const chart3Hsl = parseHsl(computedStyle.getPropertyValue('--chart-3').trim());
 
     return {
         primary: hslToHex(primaryHsl[0], primaryHsl[1], primaryHsl[2]),
         background: hslToHex(backgroundHsl[0], backgroundHsl[1], backgroundHsl[2]),
         accent: hslToHex(accentHsl[0], accentHsl[1], accentHsl[2]),
+        buttonPrimary: hslToHex(buttonPrimaryHsl[0], buttonPrimaryHsl[1], buttonPrimaryHsl[2]),
+        chart1: hslToHex(chart1Hsl[0], chart1Hsl[1], chart1Hsl[2]),
+        chart2: hslToHex(chart2Hsl[0], chart2Hsl[1], chart2Hsl[2]),
+        chart3: hslToHex(chart3Hsl[0], chart3Hsl[1], chart3Hsl[2]),
     };
 }

@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent, ChartConfig } from '@/components/ui/chart';
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
-import { hslToHex } from '@/lib/theme';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -85,8 +84,8 @@ export function ChartsModal({
 
   // Data for Income vs Expense (Bar Chart for current month)
   const barChartConfig = {
-    Ingresos: { label: 'Ingresos', color: hslToHex(140, 70, 50) },
-    Gastos: { label: 'Gastos', color: hslToHex(0, 70, 50) },
+    Ingresos: { label: 'Ingresos', color: "hsl(var(--chart-1))" },
+    Gastos: { label: 'Gastos', color: "hsl(var(--chart-2))" },
   };
 
   const { totalIncome, totalExpenses } = useMemo(() => {
@@ -198,8 +197,8 @@ export function ChartsModal({
 
 
   const budgetPerformanceConfig = {
-    Presupuesto: { label: 'Presupuesto', color: hslToHex(210, 80, 60) },
-    Gastado: { label: 'Gastado', color: hslToHex(0, 70, 60) },
+    Presupuesto: { label: 'Presupuesto', color: "hsl(var(--chart-1))" },
+    Gastado: { label: 'Gastado', color: "hsl(var(--chart-2))" },
   } satisfies ChartConfig;
 
   const periodDescription = () => {
@@ -265,7 +264,7 @@ export function ChartsModal({
                     <CardTitle>Ingresos vs. Gastos</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={{}} className="h-[250px] w-full">
+                    <ChartContainer config={barChartConfig} className="h-[250px] w-full">
                         <BarChart
                             data={[
                                 { name: 'Ingresos', value: totalIncome, fill: 'var(--color-Ingresos)' },
@@ -301,14 +300,6 @@ export function ChartsModal({
                                     return null;
                                 }}
                             />
-                             <defs>
-                                <style dangerouslySetInnerHTML={{__html: `
-                                    :root {
-                                        --color-Ingresos: ${barChartConfig.Ingresos.color};
-                                        --color-Gastos: ${barChartConfig.Gastos.color};
-                                    }
-                                `}} />
-                            </defs>
                             <Bar dataKey="value" radius={5} />
                         </BarChart>
                     </ChartContainer>
