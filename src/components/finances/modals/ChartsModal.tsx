@@ -4,8 +4,8 @@ import { useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
 
@@ -50,37 +50,33 @@ export function ChartsModal({
     );
   }, [allTransactions, currentMonth, currentYear]);
 
-  // Data for Income vs Expense (Bar Chart)
+  // Data for Income vs Expense (Bar Chart for current month)
   const barChartData = useMemo(() => {
-    const data: { month: string; year: number; Ingresos: number; Gastos: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(currentDate);
-      d.setMonth(d.getMonth() - i);
-      const month = d.getMonth();
-      const year = d.getFullYear();
+    const income = transactionsForCurrentMonth
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const expense = transactionsForCurrentMonth
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
 
-      const monthTransactions = allTransactions.filter(t => {
-        const transDate = new Date(t.timestamp);
-        return transDate.getMonth() === month && transDate.getFullYear() === year;
-      });
+    return [
+      { name: 'Ingresos', value: income },
+      { name: 'Gastos', value: expense },
+    ];
+  }, [transactionsForCurrentMonth]);
 
-      const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-      const expense = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-
-      data.push({
-        month: d.toLocaleString('es-CL', { month: 'short' }),
-        year: year,
-        Ingresos: income,
-        Gastos: expense,
-      });
-    }
-    return data;
-  }, [allTransactions, currentDate]);
-  
   const barChartConfig = {
     Ingresos: { label: 'Ingresos', color: hslToHex(140, 70, 50) },
     Gastos: { label: 'Gastos', color: hslToHex(0, 70, 50) },
-  } satisfies ChartConfig;
+  };
+
+  const { totalIncome, totalExpenses } = useMemo(() => {
+    return transactionsForCurrentMonth.reduce((acc, t) => {
+      if (t.type === 'income') acc.totalIncome += t.amount;
+      else acc.totalExpenses += t.amount;
+      return acc;
+    }, { totalIncome: 0, totalExpenses: 0 });
+  }, [transactionsForCurrentMonth]);
 
   // Data for Budget Performance by Subcategory
   const budgetPerformanceData = useMemo(() => {
@@ -138,7 +134,6 @@ export function ChartsModal({
   // Data for Budget Performance by Category
   const categoryBudgetPerformanceData = useMemo(() => {
     const performanceData: { name: string, Presupuesto: number, Gastado: number, Diferencial: number }[] = [];
-    
     const allCategoryNames = [...new Set([...Object.keys(categories), ...Object.keys(tempCategories)])].sort((a, b) => a.localeCompare(b));
 
     allCategoryNames.forEach(cat => {
@@ -181,12 +176,10 @@ export function ChartsModal({
     return performanceData;
   }, [categories, tempCategories, budgetPerformanceData, transactionsForCurrentMonth]);
 
-
   const budgetPerformanceConfig = {
     Presupuesto: { label: 'Presupuesto', color: hslToHex(210, 80, 60) },
     Gastado: { label: 'Gastado', color: hslToHex(0, 70, 60) },
   } satisfies ChartConfig;
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -201,38 +194,54 @@ export function ChartsModal({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Ingresos vs. Gastos (Últimos 6 meses)</CardTitle>
+                    <CardTitle>Ingresos vs. Gastos</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={barChartConfig} className="h-[300px] w-full">
-                        <BarChart data={barChartData} accessibilityLayer>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="text-xs" />
-                            <YAxis tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} className="text-xs" />
+                    <ChartContainer config={{}} className="h-[250px] w-full">
+                        <BarChart
+                            data={[
+                                { name: 'Ingresos', value: totalIncome, fill: 'var(--color-Ingresos)' },
+                                { name: 'Gastos', value: totalExpenses, fill: 'var(--color-Gastos)' },
+                            ]}
+                            layout="vertical"
+                            margin={{ left: 10, right: 10 }}
+                        >
+                            <CartesianGrid horizontal={false} />
+                            <YAxis
+                                dataKey="name"
+                                type="category"
+                                tickLine={false}
+                                axisLine={false}
+                                className="text-sm"
+                            />
+                            <XAxis
+                                dataKey="value"
+                                type="number"
+                                hide
+                            />
                             <ChartTooltip 
-                                content={({ payload, label }) => {
-                                    if(payload && payload.length > 0) {
+                                cursor={false}
+                                content={({ payload }) => {
+                                    if (payload && payload.length > 0) {
                                         return (
                                             <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
-                                                <p className="font-bold mb-1">{label}</p>
-                                                {payload.map((item, index) => (
-                                                    <div key={index} className="flex justify-between items-center gap-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                                                            <span>{item.name}:</span>
-                                                        </div>
-                                                        <span className="font-semibold">{formatCurrency(item.value as number)}</span>
-                                                    </div>
-                                                ))}
+                                                <p className="font-bold">{payload[0].payload.name}</p>
+                                                <p>{formatCurrency(payload[0].value as number)}</p>
                                             </div>
                                         )
                                     }
                                     return null;
                                 }}
                             />
-                             <ChartLegend content={<ChartLegendContent />} />
-                            <Bar dataKey="Ingresos" fill="var(--color-Ingresos)" radius={4} />
-                            <Bar dataKey="Gastos" fill="var(--color-Gastos)" radius={4} />
+                             <defs>
+                                <style dangerouslySetInnerHTML={{__html: `
+                                    :root {
+                                        --color-Ingresos: ${barChartConfig.Ingresos.color};
+                                        --color-Gastos: ${barChartConfig.Gastos.color};
+                                    }
+                                `}} />
+                            </defs>
+                            <Bar dataKey="value" radius={5} />
                         </BarChart>
                     </ChartContainer>
                 </CardContent>
@@ -371,5 +380,3 @@ export function ChartsModal({
     </Dialog>
   );
 }
-
-    
