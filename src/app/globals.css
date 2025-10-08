@@ -26,6 +26,7 @@
     --radius: 0.5rem;
 
     /* Custom Theme Variables */
+    --balance-border: 217 91% 60%;
     --button-primary: 217 91% 60%;
     --button-primary-foreground: 210 40% 98%;
     --chart-1: 217 91% 60%; /* Blue */
@@ -68,6 +69,7 @@
     --ring: 217 91% 73%;
     
     /* Custom Theme Variables */
+    --balance-border: 217 91% 73%;
     --button-primary: 217 91% 73%;
     --button-primary-foreground: 240 5.9% 10%;
     --chart-1: 217 91% 73%;

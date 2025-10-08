@@ -2,6 +2,7 @@ export interface AppTheme {
   primary: string;
   background: string;
   accent: string;
+  balanceBorder: string;
   buttonPrimary: string;
   buttonIncome: string;
   buttonExpense: string;
@@ -23,6 +24,7 @@ export const presetThemes: PresetTheme[] = [
       primary: '#a2d2ff',
       background: '#fefae0',
       accent: '#bde0fe',
+      balanceBorder: '#a2d2ff',
       buttonPrimary: '#a2d2ff',
       buttonIncome: '#CFFDDF',
       buttonExpense: '#FFD6D6',
@@ -38,6 +40,7 @@ export const presetThemes: PresetTheme[] = [
       primary: '#0077b6',
       background: '#eaf4f4',
       accent: '#90e0ef',
+      balanceBorder: '#0077b6',
       buttonPrimary: '#0077b6',
       buttonIncome: '#48cae4',
       buttonExpense: '#ef476f',
@@ -53,6 +56,7 @@ export const presetThemes: PresetTheme[] = [
       primary: '#f72585',
       background: '#1f1f1f',
       accent: '#7209b7',
+      balanceBorder: '#f72585',
       buttonPrimary: '#f72585',
       buttonIncome: '#39ff14',
       buttonExpense: '#f72585',
@@ -68,6 +72,7 @@ export const presetThemes: PresetTheme[] = [
       primary: '#588157',
       background: '#f0ead2',
       accent: '#a3b18a',
+      balanceBorder: '#588157',
       buttonPrimary: '#588157',
       buttonIncome: '#588157',
       buttonExpense: '#c1121f',
@@ -83,6 +88,7 @@ export const presetThemes: PresetTheme[] = [
       primary: '#f77f00',
       background: '#fff3e0',
       accent: '#fcbf49',
+      balanceBorder: '#f77f00',
       buttonPrimary: '#f77f00',
       buttonIncome: '#fca311',
       buttonExpense: '#e63946',
@@ -143,9 +149,7 @@ const setCssVar = (root: HTMLElement, varName: string, hexColor: string) => {
         root.style.setProperty(varName, `${hsl[0]} ${hsl[1]}% ${hsl[2]}%`);
         // Special logic to set foreground color for buttons to ensure readability
         const isDarkBackground = hsl[2] < 50;
-        if (varName.startsWith('--button-')) {
-             root.style.setProperty(`${varName}-foreground`, isDarkBackground ? '210 40% 98%' : '240 10% 3.9%');
-        } else if (varName === '--primary') {
+        if (varName.startsWith('--button-') || varName === '--primary') {
              root.style.setProperty(`${varName}-foreground`, isDarkBackground ? '210 40% 98%' : '240 10% 3.9%');
         }
     }
@@ -158,6 +162,7 @@ export function applyTheme(theme: AppTheme) {
   setCssVar(root, '--primary', theme.primary);
   setCssVar(root, '--background', theme.background);
   setCssVar(root, '--accent', theme.accent);
+  setCssVar(root, '--balance-border', theme.balanceBorder);
   setCssVar(root, '--button-primary', theme.buttonPrimary);
   setCssVar(root, '--button-income', theme.buttonIncome);
   setCssVar(root, '--button-expense', theme.buttonExpense);
@@ -192,6 +197,7 @@ export function getDefaultTheme(): AppTheme {
     primary: '#3b82f6',     // Blue
     background: '#f0f0f0', // Light Gray
     accent: '#bfdbfe',      // Soft Blue
+    balanceBorder: '#3b82f6',
     buttonPrimary: '#3b82f6',
     buttonIncome: '#22c55e', // Green
     buttonExpense: '#ef4444', // Red

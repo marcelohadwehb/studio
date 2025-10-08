@@ -120,14 +120,6 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
                    <Button style={{ backgroundColor: 'hsl(var(--button-categories))', color: 'hsl(var(--button-categories-foreground))' }}>Categorías</Button>
                 </div>
               </div>
-              <div>
-                <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Gráficos</h4>
-                <div className="flex gap-2 mt-4">
-                  <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-1))`}}></div>
-                  <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-2))`}}></div>
-                  <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-3))`}}></div>
-                </div>
-              </div>
             </Card>
           </div>
 
@@ -175,15 +167,16 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
             
             <div>
                <h3 className="font-bold text-center text-lg mb-3">Personalización Manual</h3>
-               <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 bg-muted/50 p-4 rounded-lg">
                 <ColorInput label="Principal (títulos, íconos)" id="primary" value={theme.primary} onChange={handleColorChange} />
+                <ColorInput label="Borde del Balance" id="balanceBorder" value={theme.balanceBorder} onChange={handleColorChange} />
                 <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
                 <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
-                <hr className="my-2 border-border" />
+                <div className="sm:col-span-2 my-1"><hr className="border-border" /></div>
                 <ColorInput label="Botón Principal (Guardar)" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
+                <ColorInput label="Botón Gráfico" id="buttonChart" value={theme.buttonChart} onChange={handleColorChange} />
                 <ColorInput label="Botón Ingreso" id="buttonIncome" value={theme.buttonIncome} onChange={handleColorChange} />
                 <ColorInput label="Botón Gasto" id="buttonExpense" value={theme.buttonExpense} onChange={handleColorChange} />
-                <ColorInput label="Botón Gráfico" id="buttonChart" value={theme.buttonChart} onChange={handleColorChange} />
                 <ColorInput label="Botón Presupuesto" id="buttonBudget" value={theme.buttonBudget} onChange={handleColorChange} />
                 <ColorInput label="Botón Registros" id="buttonRecords" value={theme.buttonRecords} onChange={handleColorChange} />
                 <ColorInput label="Botón Categorías" id="buttonCategories" value={theme.buttonCategories} onChange={handleColorChange} />
