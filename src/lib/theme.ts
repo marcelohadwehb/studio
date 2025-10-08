@@ -3,9 +3,6 @@ export interface AppTheme {
   background: string;
   accent: string;
   buttonPrimary: string;
-  chart1: string;
-  chart2: string;
-  chart3: string;
 }
 
 export interface PresetTheme {
@@ -21,9 +18,6 @@ export const presetThemes: PresetTheme[] = [
       background: '#fefae0',
       accent: '#bde0fe',
       buttonPrimary: '#a2d2ff',
-      chart1: '#ffc8dd',
-      chart2: '#cdb4db',
-      chart3: '#bde0fe',
     },
   },
   {
@@ -33,9 +27,6 @@ export const presetThemes: PresetTheme[] = [
       background: '#eaf4f4',
       accent: '#90e0ef',
       buttonPrimary: '#0077b6',
-      chart1: '#00b4d8',
-      chart2: '#48cae4',
-      chart3: '#ade8f4',
     },
   },
   {
@@ -45,9 +36,6 @@ export const presetThemes: PresetTheme[] = [
       background: '#1f1f1f',
       accent: '#7209b7',
       buttonPrimary: '#f72585',
-      chart1: '#3a0ca3',
-      chart2: '#4cc9f0',
-      chart3: '#f72585',
     },
   },
   {
@@ -57,9 +45,6 @@ export const presetThemes: PresetTheme[] = [
       background: '#f0ead2',
       accent: '#a3b18a',
       buttonPrimary: '#588157',
-      chart1: '#3a5a40',
-      chart2: '#344e41',
-      chart3: '#a3b18a',
     },
   },
   {
@@ -69,9 +54,6 @@ export const presetThemes: PresetTheme[] = [
       background: '#fff3e0',
       accent: '#fcbf49',
       buttonPrimary: '#f77f00',
-      chart1: '#d62828',
-      chart2: '#fcbf49',
-      chart3: '#eae2b7',
     },
   },
 ];
@@ -138,9 +120,6 @@ export function applyTheme(theme: AppTheme) {
   setCssVar(root, '--background', theme.background);
   setCssVar(root, '--accent', theme.accent);
   setCssVar(root, '--button-primary', theme.buttonPrimary);
-  setCssVar(root, '--chart-1', theme.chart1);
-  setCssVar(root, '--chart-2', theme.chart2);
-  setCssVar(root, '--chart-3', theme.chart3);
 
   const primaryHsl = hexToHsl(theme.primary);
   if (primaryHsl) {
@@ -169,8 +148,5 @@ export function getDefaultTheme(): AppTheme {
     background: '#f0f0f0', // Light Gray
     accent: '#bfdbfe',      // Soft Blue
     buttonPrimary: '#3b82f6',
-    chart1: '#3b82f6',      // Blue
-    chart2: '#ef4444',      // Red
-    chart3: '#22c55e',      // Green
   };
 }

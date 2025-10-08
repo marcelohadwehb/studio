@@ -180,10 +180,6 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
                 <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
                 <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
                 <ColorInput label="Botón Principal" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
-                <h4 className="font-semibold text-sm pt-2">Colores de Gráficos</h4>
-                <ColorInput label="Color Gráfico 1" id="chart1" value={theme.chart1} onChange={handleColorChange} />
-                <ColorInput label="Color Gráfico 2" id="chart2" value={theme.chart2} onChange={handleColorChange} />
-                <ColorInput label="Color Gráfico 3" id="chart3" value={theme.chart3} onChange={handleColorChange} />
                </div>
             </div>
           </div>
