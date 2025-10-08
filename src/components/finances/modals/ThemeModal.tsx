@@ -82,7 +82,7 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Paintbrush className="h-6 w-6" /> Personalizar Tema
