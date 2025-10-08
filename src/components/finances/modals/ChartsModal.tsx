@@ -53,6 +53,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
   // Data for Monthly Expenses by Category (Pie Chart)
   const { pieChartData, pieChartConfig } = useMemo(() => {
     const expenses = transactionsForCurrentMonth.filter(t => t.type === 'expense');
+    const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
 
     const expensesByCategory = expenses.reduce((acc, t) => {
       const category = t.category || 'Sin Categoría';
@@ -69,6 +70,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
       name,
       value,
       fill: pieChartColors[index],
+      percentage: totalExpenses > 0 ? (value / totalExpenses) * 100 : 0,
     }));
 
     const pieChartConfig = sortedCategories.reduce((acc, [name], index) => {
@@ -165,16 +167,16 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                 <CardContent>
                     {pieChartData.length > 0 ? (
                     <ChartContainer config={pieChartConfig} className="mx-auto aspect-square h-[300px]">
-                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                        <PieChart>
                             <ChartTooltip 
                                 cursor={false}
                                 content={({ payload }) => {
                                     if (payload && payload.length > 0) {
-                                        const { name, value } = payload[0].payload;
+                                        const { name, value, percentage } = payload[0].payload;
                                         return (
                                             <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
                                                 <p className="font-bold">{name}</p>
-                                                <p className="text-foreground">{formatCurrency(value as number)}</p>
+                                                <p className="text-foreground">{formatCurrency(value as number)} ({percentage.toFixed(1)}%)</p>
                                             </div>
                                         );
                                     }
@@ -185,17 +187,13 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                 data={pieChartData} 
                                 dataKey="value" 
                                 nameKey="name" 
-                                labelLine={false} 
-                                label={({ name, percent }) => {
-                                  if (!name || percent === undefined) return null;
-                                  return `${name}: ${(percent * 100).toFixed(0)}%`;
-                                }}
-                                className="text-xs"
+                                labelLine={false}
                             >
-                                 {pieChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                 {pieChartData.map((entry) => (
+                                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                                 ))}
                             </Pie>
+                            <ChartLegend content={<ChartLegendContent nameKey="name" />} />
                         </PieChart>
                     </ChartContainer>
                      ) : (
