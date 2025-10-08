@@ -20,6 +20,9 @@ import { RecordsModal } from './modals/RecordsModal';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { PinScreen } from './PinScreen';
 import { CleanDataModal } from './modals/CleanDataModal';
+import { ChartsModal } from './modals/ChartsModal';
+import { ThemeModal } from './modals/ThemeModal';
+import { applyTheme } from '@/lib/theme';
 
 
 const appId = 'default-app-id';
@@ -46,6 +49,13 @@ export function FinancesDashboard() {
 
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
+  
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('app-theme');
+    if (savedTheme) {
+      applyTheme(JSON.parse(savedTheme));
+    }
+  }, []);
 
   useEffect(() => {
     const initAuthAndListeners = async () => {
@@ -353,6 +363,7 @@ export function FinancesDashboard() {
         setCurrentDate={setCurrentDate} 
         onExport={handleExport}
         onOpenCleanDataModal={() => handleOpenModal('cleanData')}
+        onOpenThemeModal={() => handleOpenModal('theme')}
       />
       
       <main className="p-4 sm:p-6">
@@ -426,6 +437,21 @@ export function FinancesDashboard() {
               isOpen={true}
               onClose={handleCloseModal}
               onClean={handleCleanData}
+            />
+          )}
+          {modalState.type === 'charts' && (
+            <ChartsModal
+              isOpen={true}
+              onClose={handleCloseModal}
+              allTransactions={allTransactions}
+              currentDate={currentDate}
+              formatCurrency={formatCurrency}
+            />
+          )}
+          {modalState.type === 'theme' && (
+            <ThemeModal
+              isOpen={true}
+              onClose={handleCloseModal}
             />
           )}
         </>

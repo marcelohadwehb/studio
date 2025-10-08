@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Download, Trash2 } from "lucide-react"
+import { Download, Trash2, Palette } from "lucide-react"
 import { useMemo } from "react";
 
 interface HeaderProps {
@@ -22,9 +22,10 @@ interface HeaderProps {
   setCurrentDate: (date: Date) => void;
   onExport: (exportType: 'month' | 'year' | 'last5years') => void;
   onOpenCleanDataModal: () => void;
+  onOpenThemeModal: () => void;
 }
 
-export function Header({ currentDate, setCurrentDate, onExport, onOpenCleanDataModal }: HeaderProps) {
+export function Header({ currentDate, setCurrentDate, onExport, onOpenCleanDataModal, onOpenThemeModal }: HeaderProps) {
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
 
@@ -95,6 +96,15 @@ export function Header({ currentDate, setCurrentDate, onExport, onOpenCleanDataM
           >
             <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
             <span className="sr-only">Limpiar Datos</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="bg-white hover:bg-gray-200 text-purple-500 rounded-full shadow-md transition-transform duration-200 transform hover:scale-105 border-0 h-9 w-9 sm:h-10 sm:w-10"
+            onClick={onOpenThemeModal}
+          >
+            <Palette className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="sr-only">Personalizar Tema</span>
           </Button>
         </div>
       </div>

@@ -30,7 +30,7 @@ export interface RecordItem {
 }
 
 export interface ModalState {
-  type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'cleanData' | null;
+  type: 'income' | 'expense' | 'budgets' | 'categories' | 'records' | 'cleanData' | 'charts' | 'theme' | null;
   transactionToEdit?: Transaction | null;
 }
 
