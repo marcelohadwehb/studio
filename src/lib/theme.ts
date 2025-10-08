@@ -124,7 +124,7 @@ const setCssVar = (root: HTMLElement, varName: string, hexColor: string) => {
     if (hsl) {
         root.style.setProperty(varName, `${hsl[0]} ${hsl[1]}% ${hsl[2]}%`);
         if (varName === '--primary' || varName === '--button-primary') {
-            const fg = hsl[2] > 50 ? '0 0% 10%' : '0 0% 98%';
+            const fg = hsl[2] > 50 ? '240 10% 3.9%' : '210 40% 98%';
             root.style.setProperty(`${varName}-foreground`, fg);
         }
     }
@@ -149,46 +149,28 @@ export function applyTheme(theme: AppTheme) {
   
   const backgroundHsl = hexToHsl(theme.background);
   if (backgroundHsl) {
-    const bgFg = backgroundHsl[2] > 50 ? '0 0% 10%' : '0 0% 98%';
+    const bgFg = backgroundHsl[2] > 50 ? '240 10% 3.9%' : '0 0% 98%';
     root.style.setProperty('--foreground', bgFg);
+    
+    // Set card and popover based on background
+    const cardBg = backgroundHsl[2] > 50 ? '0 0% 100%' : '240 10% 3.9%';
+    const cardFg = backgroundHsl[2] > 50 ? '240 10% 3.9%' : '0 0% 98%';
+    root.style.setProperty('--card', cardBg);
+    root.style.setProperty('--card-foreground', cardFg);
+    root.style.setProperty('--popover', cardBg);
+    root.style.setProperty('--popover-foreground', cardFg);
   }
 }
 
 export function getDefaultTheme(): AppTheme {
-    const root = getRootElement();
-    if (!root) {
-        return {
-            primary: '#3b82f6',
-            background: '#f0f0f0',
-            accent: '#e0e7ff',
-            buttonPrimary: '#3b82f6',
-            chart1: '#3b82f6',
-            chart2: '#ef4444',
-            chart3: '#22c55e',
-        };
-    }
-    const computedStyle = getComputedStyle(root);
-    
-    const parseHsl = (hslStr: string): [number, number, number] => {
-        const [h, s, l] = hslStr.trim().replace(/%/g, '').split(' ').map(parseFloat);
-        return [h, s, l];
-    };
-
-    const primaryHsl = parseHsl(computedStyle.getPropertyValue('--primary').trim());
-    const backgroundHsl = parseHsl(computedStyle.getPropertyValue('--background').trim());
-    const accentHsl = parseHsl(computedStyle.getPropertyValue('--accent').trim());
-    const buttonPrimaryHsl = parseHsl(computedStyle.getPropertyValue('--button-primary').trim());
-    const chart1Hsl = parseHsl(computedStyle.getPropertyValue('--chart-1').trim());
-    const chart2Hsl = parseHsl(computedStyle.getPropertyValue('--chart-2').trim());
-    const chart3Hsl = parseHsl(computedStyle.getPropertyValue('--chart-3').trim());
-
-    return {
-        primary: hslToHex(primaryHsl[0], primaryHsl[1], primaryHsl[2]),
-        background: hslToHex(backgroundHsl[0], backgroundHsl[1], backgroundHsl[2]),
-        accent: hslToHex(accentHsl[0], accentHsl[1], accentHsl[2]),
-        buttonPrimary: hslToHex(buttonPrimaryHsl[0], buttonPrimaryHsl[1], buttonPrimaryHsl[2]),
-        chart1: hslToHex(chart1Hsl[0], chart1Hsl[1], chart1Hsl[2]),
-        chart2: hslToHex(chart2Hsl[0], chart2Hsl[1], chart2Hsl[2]),
-        chart3: hslToHex(chart3Hsl[0], chart3Hsl[1], chart3Hsl[2]),
-    };
+  // Return hardcoded default values to ensure reset is always correct.
+  return {
+    primary: '#3b82f6',     // Blue
+    background: '#f0f0f0', // Light Gray
+    accent: '#bfdbfe',      // Soft Blue
+    buttonPrimary: '#3b82f6',
+    chart1: '#3b82f6',      // Blue
+    chart2: '#ef4444',      // Red
+    chart3: '#22c55e',      // Green
+  };
 }
