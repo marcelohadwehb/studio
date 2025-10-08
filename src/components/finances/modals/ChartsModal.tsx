@@ -182,15 +182,18 @@ export function ChartsModal({
   // Data for Budget Performance by Category
   const categoryBudgetPerformanceData = useMemo(() => {
     const performanceData: { name: string, Presupuesto: number, Gastado: number, Diferencial: number }[] = [];
-    const allCategoryNames = [...Object.keys(categories), ...Object.keys(tempCategories)];
-    const uniqueCategoryNames = [...new Set(allCategoryNames)].sort((a, b) => a.localeCompare(b));
+    
+    const allCategoryNames = [...new Set([...Object.keys(categories), ...Object.keys(tempCategories)])].sort((a, b) => a.localeCompare(b));
 
-    uniqueCategoryNames.forEach(cat => {
-        const subcats = [...(categories[cat] || []), ...(tempCategories[cat] || [])];
+    allCategoryNames.forEach(cat => {
+        const permanentSubcats = categories[cat] || [];
+        const tempSubcats = tempCategories[cat] || [];
+        const allSubcats = [...new Set([...permanentSubcats, ...tempSubcats])];
+        
         let totalBudget = 0;
         let totalSpent = 0;
 
-        subcats.forEach(subcat => {
+        allSubcats.forEach(subcat => {
             const allPerformanceItems = Object.values(budgetPerformanceData).flat();
             const performanceItem = allPerformanceItems.find(item => item.subcategory === subcat);
 
