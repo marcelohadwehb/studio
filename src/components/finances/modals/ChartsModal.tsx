@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent, ChartConfig } from '@/components/ui/chart';
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
@@ -21,6 +21,8 @@ interface ChartsModalProps {
   tempBudgets: TemporaryBudgets;
 }
 
+type ChartPeriod = 'month' | 'firstHalf' | 'secondHalf' | 'year';
+
 const compactCurrencyFormatter = new Intl.NumberFormat('es-CL', {
     style: 'currency',
     currency: 'CLP',
@@ -28,6 +30,13 @@ const compactCurrencyFormatter = new Intl.NumberFormat('es-CL', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 1
 });
+
+const filterButtons: { label: string; value: ChartPeriod }[] = [
+    { label: 'Mes', value: 'month' },
+    { label: 'Enero-Junio', value: 'firstHalf' },
+    { label: 'Julio-Diciembre', value: 'secondHalf' },
+    { label: 'Año', value: 'year' },
+];
 
 
 export function ChartsModal({ 
@@ -41,47 +50,52 @@ export function ChartsModal({
     tempCategories,
     tempBudgets
 }: ChartsModalProps) {
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('month');
+
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
-  const transactionsForCurrentMonth = useMemo(() => {
-     return allTransactions.filter(
-      t => new Date(t.timestamp).getMonth() === currentMonth && new Date(t.timestamp).getFullYear() === currentYear
-    );
-  }, [allTransactions, currentMonth, currentYear]);
+  const transactionsInPeriod = useMemo(() => {
+    return allTransactions.filter(t => {
+        const transactionDate = new Date(t.timestamp);
+        const transactionYear = transactionDate.getFullYear();
+        const transactionMonth = transactionDate.getMonth();
+
+        if (transactionYear !== currentYear) return false;
+
+        switch (chartPeriod) {
+            case 'month':
+                return transactionMonth === currentMonth;
+            case 'firstHalf':
+                return transactionMonth >= 0 && transactionMonth <= 5;
+            case 'secondHalf':
+                return transactionMonth >= 6 && transactionMonth <= 11;
+            case 'year':
+                return true;
+            default:
+                return false;
+        }
+    });
+  }, [allTransactions, currentYear, currentMonth, chartPeriod]);
 
   // Data for Income vs Expense (Bar Chart for current month)
-  const barChartData = useMemo(() => {
-    const income = transactionsForCurrentMonth
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const expense = transactionsForCurrentMonth
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    return [
-      { name: 'Ingresos', value: income },
-      { name: 'Gastos', value: expense },
-    ];
-  }, [transactionsForCurrentMonth]);
-
   const barChartConfig = {
     Ingresos: { label: 'Ingresos', color: hslToHex(140, 70, 50) },
     Gastos: { label: 'Gastos', color: hslToHex(0, 70, 50) },
   };
 
   const { totalIncome, totalExpenses } = useMemo(() => {
-    return transactionsForCurrentMonth.reduce((acc, t) => {
+    return transactionsInPeriod.reduce((acc, t) => {
       if (t.type === 'income') acc.totalIncome += t.amount;
       else acc.totalExpenses += t.amount;
       return acc;
     }, { totalIncome: 0, totalExpenses: 0 });
-  }, [transactionsForCurrentMonth]);
+  }, [transactionsInPeriod]);
 
   // Data for Budget Performance by Subcategory
   const budgetPerformanceData = useMemo(() => {
     const data: { category: string, subcategory: string, Presupuesto: number, Gastado: number, Diferencial: number }[] = [];
-    const expensesBySubcategory = transactionsForCurrentMonth
+    const expensesBySubcategory = transactionsInPeriod
       .filter(t => t.type === 'expense' && t.subcategory)
       .reduce((acc, t) => {
         if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
@@ -97,10 +111,21 @@ export function ChartsModal({
                 if (tempBudget && typeof tempBudget.from?.year === 'number' && typeof tempBudget.to?.year === 'number') {
                     const fromDate = new Date(tempBudget.from.year, tempBudget.from.month, 1);
                     const toDate = new Date(tempBudget.to.year, tempBudget.to.month + 1, 0);
-                    const currentMonthDate = new Date(currentYear, currentMonth, 1);
-
-                    if (currentMonthDate >= fromDate && currentMonthDate <= toDate) {
-                        budgetAmount = tempBudget.amount || 0;
+                    
+                    // Count budget if any part of its period overlaps with the selected chart period
+                    const periodStart = chartPeriod === 'month' ? new Date(currentYear, currentMonth, 1) : new Date(currentYear, chartPeriod === 'firstHalf' ? 0 : (chartPeriod === 'secondHalf' ? 6 : 0), 1);
+                    const periodEnd = chartPeriod === 'month' ? new Date(currentYear, currentMonth + 1, 0) : new Date(currentYear, chartPeriod === 'firstHalf' ? 5 : (chartPeriod === 'secondHalf' ? 11 : 11), 31);
+                    
+                    if (fromDate <= periodEnd && toDate >= periodStart) {
+                         budgetAmount = tempBudget.amount || 0;
+                         if (chartPeriod === 'month') {
+                             // This is a simplification. For now, we take the full monthly budget if active this month.
+                         } else {
+                            // This is a simplification, we are taking the total amount for the period
+                            const budgetDurationInMonths = (tempBudget.to.year - tempBudget.from.year) * 12 + tempBudget.to.month - tempBudget.from.month + 1;
+                            const periodDurationInMonths = chartPeriod === 'firstHalf' || chartPeriod === 'secondHalf' ? 6 : 12;
+                            budgetAmount = (tempBudget.amount / budgetDurationInMonths) * periodDurationInMonths;
+                         }
                     }
                 }
             } else {
@@ -117,7 +142,7 @@ export function ChartsModal({
             });
         });
     };
-
+    
     Object.keys(categories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, categories[cat], false));
     Object.keys(tempCategories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, tempCategories[cat], true));
     
@@ -129,7 +154,7 @@ export function ChartsModal({
         return acc;
     }, {} as Record<string, typeof data>);
 
-  }, [transactionsForCurrentMonth, categories, budgets, tempCategories, tempBudgets, currentMonth, currentYear]);
+  }, [transactionsInPeriod, categories, budgets, tempCategories, tempBudgets, currentMonth, currentYear, chartPeriod]);
 
   // Data for Budget Performance by Category
   const categoryBudgetPerformanceData = useMemo(() => {
@@ -137,31 +162,21 @@ export function ChartsModal({
     const allCategoryNames = [...new Set([...Object.keys(categories), ...Object.keys(tempCategories)])].sort((a, b) => a.localeCompare(b));
 
     allCategoryNames.forEach(cat => {
-        const permanentSubcats = categories[cat] || [];
-        const tempSubcats = tempCategories[cat] || [];
-        const allSubcats = [...new Set([...permanentSubcats, ...tempSubcats])];
+        const subcategoriesForCat = budgetPerformanceData[cat] || [];
+        const allSubcatsForCat = [...new Set([...(categories[cat] || []), ...(tempCategories[cat] || [])])];
         
-        let totalBudget = 0;
-        let totalSpent = 0;
-
-        allSubcats.forEach(subcat => {
-            const allPerformanceItems = Object.values(budgetPerformanceData).flat();
-            const performanceItem = allPerformanceItems.find(item => item.subcategory === subcat);
-
-            if (performanceItem) {
-                totalBudget += performanceItem.Presupuesto;
-                totalSpent += performanceItem.Gastado;
-            } else {
-                 const expensesBySubcategory = transactionsForCurrentMonth
-                    .filter(t => t.type === 'expense' && t.subcategory)
-                    .reduce((acc, t) => {
-                        if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
-                        acc[t.subcategory!] += t.amount;
-                        return acc;
-                    }, {} as { [key: string]: number });
-                 totalSpent += expensesBySubcategory[subcat] || 0;
-            }
-        });
+        let totalBudget = subcategoriesForCat.reduce((sum, item) => sum + item.Presupuesto, 0);
+        
+        const totalSpent = allSubcatsForCat.reduce((sum, subcat) => {
+             const expensesBySubcategory = transactionsInPeriod
+                .filter(t => t.type === 'expense' && t.subcategory)
+                .reduce((acc, t) => {
+                    if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
+                    acc[t.subcategory!] += t.amount;
+                    return acc;
+                }, {} as { [key: string]: number });
+            return sum + (expensesBySubcategory[subcat] || 0);
+        }, 0);
         
         if (totalBudget > 0 || totalSpent > 0) {
             performanceData.push({
@@ -174,21 +189,48 @@ export function ChartsModal({
     });
 
     return performanceData;
-  }, [categories, tempCategories, budgetPerformanceData, transactionsForCurrentMonth]);
+  }, [categories, tempCategories, budgetPerformanceData, transactionsInPeriod]);
+
 
   const budgetPerformanceConfig = {
     Presupuesto: { label: 'Presupuesto', color: hslToHex(210, 80, 60) },
     Gastado: { label: 'Gastado', color: hslToHex(0, 70, 60) },
   } satisfies ChartConfig;
 
+  const periodDescription = () => {
+    switch (chartPeriod) {
+        case 'month':
+            return `el mes de ${currentDate.toLocaleString('es-CL', { month: 'long' })}`;
+        case 'firstHalf':
+            return 'el primer semestre';
+        case 'secondHalf':
+            return 'el segundo semestre';
+        case 'year':
+            return `el año ${currentYear}`;
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-5xl w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">Reportes Gráficos</DialogTitle>
-           <DialogDescription className="text-center pt-2">
-            Análisis visual de tus finanzas para el período de {currentDate.toLocaleString('es-CL', { month: 'long', year: 'numeric' })}.
+          <DialogDescription className="text-center pt-2">
+            Análisis visual de tus finanzas para {periodDescription()}.
           </DialogDescription>
+          <div className="flex items-center justify-center gap-1 rounded-full bg-gray-100 p-1 mt-4 mx-auto">
+            {filterButtons.map(({ label, value }) => (
+              <Button
+                key={value}
+                size="sm"
+                variant={chartPeriod === value ? 'default' : 'ghost'}
+                onClick={() => setChartPeriod(value)}
+                className={`rounded-full px-3 text-xs sm:px-4 sm:text-sm font-medium transition-colors h-8`}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -298,6 +340,8 @@ export function ChartsModal({
                 <h3 className="text-xl font-semibold text-center -mb-2">Rendimiento de Presupuestos por Subcategoría</h3>
                 {Object.keys(budgetPerformanceData).map((category) => {
                     const subcategoryData = budgetPerformanceData[category];
+                    if (subcategoryData.every(d => d.Presupuesto === 0 && d.Gastado === 0)) return null;
+
                     const chartHeight = subcategoryData.length * 35 + 60; // 35px per bar + 60px for padding/axis/legend
                     return (
                         <Card key={category}>
