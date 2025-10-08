@@ -133,7 +133,7 @@ export function ChartsModal({
 
   // Data for Budget Performance by Subcategory
   const budgetPerformanceData = useMemo(() => {
-    const data: { name: string, Presupuesto: number, Gastado: number, Diferencia: number }[] = [];
+    const data: { name: string, Presupuesto: number, Gastado: number, Diferencial: number }[] = [];
     const expensesBySubcategory = transactionsForCurrentMonth
       .filter(t => t.type === 'expense' && t.subcategory)
       .reduce((acc, t) => {
@@ -151,7 +151,7 @@ export function ChartsModal({
           name: subcat,
           Presupuesto: budgetAmount,
           Gastado: spent,
-          Diferencia: budgetAmount - spent,
+          Diferencial: budgetAmount - spent,
         });
       }
     });
@@ -173,7 +173,7 @@ export function ChartsModal({
               name: subcat,
               Presupuesto: budgetAmount,
               Gastado: spent,
-              Diferencia: budgetAmount - spent,
+              Diferencial: budgetAmount - spent,
             });
           }
         }
@@ -290,8 +290,12 @@ export function ChartsModal({
                 <CardContent>
                    {budgetPerformanceData.length > 0 ? (
                     <ChartContainer config={budgetPerformanceConfig} className="h-[400px] w-full">
-                        <BarChart data={budgetPerformanceData} margin={{ left: 20 }}>
-                           <CartesianGrid vertical={false} />
+                        <BarChart 
+                            layout="vertical" 
+                            data={budgetPerformanceData} 
+                            margin={{ left: 20 }}
+                        >
+                           <CartesianGrid horizontal={false} />
                             <YAxis 
                                 dataKey="name" 
                                 type="category"
@@ -301,8 +305,9 @@ export function ChartsModal({
                                 width={150}
                                 className="text-xs"
                             />
-                            <XAxis type="number" tickFormatter={compactCurrencyFormatter} />
+                            <XAxis type="number" dataKey="Presupuesto" tickFormatter={compactCurrencyFormatter} />
                             <ChartTooltip 
+                                cursor={{fill: 'hsl(var(--muted))'}}
                                 content={({ payload, label }) => {
                                   if (payload && payload.length > 0) {
                                     const performanceItem = budgetPerformanceData.find(item => item.name === label);
@@ -322,9 +327,9 @@ export function ChartsModal({
                                           </div>
                                         </div>
                                         <div className="border-t mt-2 pt-2 flex justify-between font-bold">
-                                            <span>Diferencia:</span>
-                                            <span className={performanceItem.Diferencia >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                                {formatCurrency(performanceItem.Diferencia)}
+                                            <span>Diferencial:</span>
+                                            <span className={performanceItem.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                                {formatCurrency(performanceItem.Diferencial)}
                                             </span>
                                         </div>
                                       </div>
