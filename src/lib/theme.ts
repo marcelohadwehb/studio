@@ -3,6 +3,9 @@ export interface AppTheme {
   background: string;
   accent: string;
   buttonPrimary: string;
+  buttonIncome: string;
+  buttonExpense: string;
+  buttonChart: string;
 }
 
 export interface PresetTheme {
@@ -18,6 +21,9 @@ export const presetThemes: PresetTheme[] = [
       background: '#fefae0',
       accent: '#bde0fe',
       buttonPrimary: '#a2d2ff',
+      buttonIncome: '#CFFDDF',
+      buttonExpense: '#FFD6D6',
+      buttonChart: '#bde0fe',
     },
   },
   {
@@ -27,6 +33,9 @@ export const presetThemes: PresetTheme[] = [
       background: '#eaf4f4',
       accent: '#90e0ef',
       buttonPrimary: '#0077b6',
+      buttonIncome: '#48cae4',
+      buttonExpense: '#ef476f',
+      buttonChart: '#0077b6',
     },
   },
   {
@@ -36,6 +45,9 @@ export const presetThemes: PresetTheme[] = [
       background: '#1f1f1f',
       accent: '#7209b7',
       buttonPrimary: '#f72585',
+      buttonIncome: '#39ff14',
+      buttonExpense: '#f72585',
+      buttonChart: '#4cc9f0',
     },
   },
   {
@@ -45,6 +57,9 @@ export const presetThemes: PresetTheme[] = [
       background: '#f0ead2',
       accent: '#a3b18a',
       buttonPrimary: '#588157',
+      buttonIncome: '#588157',
+      buttonExpense: '#c1121f',
+      buttonChart: '#3a5a40',
     },
   },
   {
@@ -54,6 +69,9 @@ export const presetThemes: PresetTheme[] = [
       background: '#fff3e0',
       accent: '#fcbf49',
       buttonPrimary: '#f77f00',
+      buttonIncome: '#fca311',
+      buttonExpense: '#e63946',
+      buttonChart: '#f77f00',
     },
   },
 ];
@@ -105,9 +123,12 @@ const setCssVar = (root: HTMLElement, varName: string, hexColor: string) => {
     const hsl = hexToHsl(hexColor);
     if (hsl) {
         root.style.setProperty(varName, `${hsl[0]} ${hsl[1]}% ${hsl[2]}%`);
-        if (varName === '--primary' || varName === '--button-primary') {
-            const fg = hsl[2] > 50 ? '240 10% 3.9%' : '210 40% 98%';
-            root.style.setProperty(`${varName}-foreground`, fg);
+        // Special logic to set foreground color for buttons to ensure readability
+        const isDarkBackground = hsl[2] < 50;
+        if (varName.startsWith('--button-')) {
+             root.style.setProperty(`${varName}-foreground`, isDarkBackground ? '210 40% 98%' : '240 10% 3.9%');
+        } else if (varName === '--primary') {
+             root.style.setProperty(`${varName}-foreground`, isDarkBackground ? '210 40% 98%' : '240 10% 3.9%');
         }
     }
 };
@@ -120,6 +141,9 @@ export function applyTheme(theme: AppTheme) {
   setCssVar(root, '--background', theme.background);
   setCssVar(root, '--accent', theme.accent);
   setCssVar(root, '--button-primary', theme.buttonPrimary);
+  setCssVar(root, '--button-income', theme.buttonIncome);
+  setCssVar(root, '--button-expense', theme.buttonExpense);
+  setCssVar(root, '--button-chart', theme.buttonChart);
 
   const primaryHsl = hexToHsl(theme.primary);
   if (primaryHsl) {
@@ -148,5 +172,8 @@ export function getDefaultTheme(): AppTheme {
     background: '#f0f0f0', // Light Gray
     accent: '#bfdbfe',      // Soft Blue
     buttonPrimary: '#3b82f6',
+    buttonIncome: '#22c55e', // Green
+    buttonExpense: '#ef4444', // Red
+    buttonChart: '#3b82f6', // Blue
   };
 }

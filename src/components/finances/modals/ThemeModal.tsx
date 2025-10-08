@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { AppTheme, applyTheme, getDefaultTheme, presetThemes, PresetTheme } from '@/lib/theme';
 import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import { Paintbrush, Check } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -180,6 +179,10 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
                 <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
                 <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
                 <ColorInput label="Botón Principal" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
+                <hr className="my-2 border-border" />
+                <ColorInput label="Botón Ingreso" id="buttonIncome" value={theme.buttonIncome} onChange={handleColorChange} />
+                <ColorInput label="Botón Gasto" id="buttonExpense" value={theme.buttonExpense} onChange={handleColorChange} />
+                <ColorInput label="Botón Gráfico" id="buttonChart" value={theme.buttonChart} onChange={handleColorChange} />
                </div>
             </div>
           </div>
