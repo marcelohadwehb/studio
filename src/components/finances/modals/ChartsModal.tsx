@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
 
@@ -138,7 +138,7 @@ export function ChartsModal({
       }, {} as { [key: string]: number });
       
     const processCategory = (categoryName: string, subcategories: string[], isTemporary: boolean) => {
-        subcategories.forEach(subcat => {
+        subcategories.sort((a,b) => a.localeCompare(b)).forEach(subcat => {
             let budgetAmount = 0;
             if (isTemporary) {
                 const tempBudget = tempBudgets[subcat];
@@ -166,8 +166,8 @@ export function ChartsModal({
         });
     };
 
-    Object.keys(categories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, categories[cat].sort((a,b) => a.localeCompare(b)), false));
-    Object.keys(tempCategories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, tempCategories[cat].sort((a,b) => a.localeCompare(b)), true));
+    Object.keys(categories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, categories[cat], false));
+    Object.keys(tempCategories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, tempCategories[cat], true));
     
     return data.reduce((acc, item) => {
         if (!acc[item.category]) {
@@ -248,7 +248,7 @@ export function ChartsModal({
                           tickMargin={10}
                           axisLine={false}
                           className="text-xs"
-                          width={120}
+                          width={150}
                         />
                         <XAxis dataKey="value" type="number" hide />
                         <ChartTooltip
