@@ -155,20 +155,28 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                     <ChartContainer config={pieChartConfig} className="mx-auto aspect-square h-[300px]">
                         <PieChart>
                             <ChartTooltip 
+                                cursor={false}
                                 content={({ payload }) => {
                                     if (payload && payload.length > 0) {
-                                        const { name, value } = payload[0];
+                                        const { name, value } = payload[0].payload;
                                         return (
-                                            <div className="bg-background p-2 border rounded shadow-lg">
+                                            <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
                                                 <p className="font-bold">{name}</p>
-                                                <p>{formatCurrency(value as number)}</p>
+                                                <p className="text-foreground">{formatCurrency(value as number)}</p>
                                             </div>
                                         );
                                     }
                                     return null;
                                 }}
                             />
-                            <Pie data={pieChartData} dataKey="value" nameKey="name" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                            <Pie 
+                                data={pieChartData} 
+                                dataKey="value" 
+                                nameKey="name" 
+                                labelLine={false} 
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                className="text-xs"
+                            >
                                  {pieChartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.fill} />
                                 ))}
@@ -191,9 +199,29 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                     <ChartContainer config={barChartConfig} className="h-[300px] w-full">
                         <BarChart data={barChartData} accessibilityLayer>
                             <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                            <YAxis tickFormatter={(value) => `$${Number(value) / 1000}k`} />
-                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="text-xs" />
+                            <YAxis tickFormatter={(value) => `$${Number(value) / 1000}k`} className="text-xs" />
+                            <ChartTooltip 
+                                content={({ payload, label }) => {
+                                    if(payload && payload.length > 0) {
+                                        return (
+                                            <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
+                                                <p className="font-bold mb-1">{label}</p>
+                                                {payload.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-center gap-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                                                            <span>{item.name}:</span>
+                                                        </div>
+                                                        <span className="font-semibold">{formatCurrency(item.value as number)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )
+                                    }
+                                    return null;
+                                }}
+                            />
                             <Bar dataKey="Ingresos" fill="var(--color-Ingresos)" radius={4} />
                             <Bar dataKey="Gastos" fill="var(--color-Gastos)" radius={4} />
                         </BarChart>
@@ -225,10 +253,10 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                   if (payload && payload.length > 0) {
                                     const total = payload.reduce((acc, entry) => acc + (entry.value as number), 0);
                                     return (
-                                      <div className="bg-background p-2 border rounded shadow-lg">
+                                      <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
                                         <p className="font-bold mb-2">{label}</p>
                                         <div className="space-y-1">
-                                          {payload.map((entry, index) => (
+                                          {payload.slice().reverse().map((entry, index) => (
                                             <div key={`item-${index}`} className="flex justify-between items-center gap-4">
                                               <div className="flex items-center gap-2">
                                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }}></span>
