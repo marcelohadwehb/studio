@@ -186,24 +186,28 @@ export function ChartsModal({
     const uniqueCategoryNames = [...new Set(allCategoryNames)].sort((a, b) => a.localeCompare(b));
 
     uniqueCategoryNames.forEach(cat => {
-        const subcats = (categories[cat] || []).concat(tempCategories[cat] || []);
+        const subcats = [...(categories[cat] || []), ...(tempCategories[cat] || [])];
         let totalBudget = 0;
         let totalSpent = 0;
 
         subcats.forEach(subcat => {
-            const performanceItem = Object.values(budgetPerformanceData).flat().find(item => item.subcategory === subcat && item.category === cat);
+            const allPerformanceItems = Object.values(budgetPerformanceData).flat();
+            const performanceItem = allPerformanceItems.find(item => item.subcategory === subcat);
+
             if (performanceItem) {
                 totalBudget += performanceItem.Presupuesto;
                 totalSpent += performanceItem.Gastado;
             }
         });
         
-        performanceData.push({
-            name: cat,
-            Presupuesto: totalBudget,
-            Gastado: totalSpent,
-            Diferencial: totalBudget - totalSpent,
-        });
+        if (totalBudget > 0 || totalSpent > 0) {
+            performanceData.push({
+                name: cat,
+                Presupuesto: totalBudget,
+                Gastado: totalSpent,
+                Diferencial: totalBudget - totalSpent,
+            });
+        }
     });
 
     return performanceData;
