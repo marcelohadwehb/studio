@@ -8,6 +8,9 @@ import { ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent, ChartCon
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
+import { Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 interface ChartsModalProps {
   isOpen: boolean;
@@ -51,6 +54,8 @@ export function ChartsModal({
     tempBudgets
 }: ChartsModalProps) {
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('month');
+  const [showPeriodInfo, setShowPeriodInfo] = useState(false);
+
 
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
@@ -218,22 +223,40 @@ export function ChartsModal({
           <DialogDescription className="text-center pt-2">
             Análisis visual de tus finanzas para {periodDescription()}.
           </DialogDescription>
-          <div className="text-center text-xs text-muted-foreground">
-            (Primer Semestre: Ene-Jun, Segundo Semestre: Jul-Dic)
+          
+          <div className="flex items-center justify-center gap-2 mt-4 mx-auto">
+            <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
+              {filterButtons.map(({ label, value }) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={chartPeriod === value ? 'default' : 'ghost'}
+                  onClick={() => setChartPeriod(value)}
+                  className={`rounded-full px-3 text-xs sm:px-4 sm:text-sm font-medium transition-colors h-8`}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPeriodInfo(!showPeriodInfo)}>
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mostrar/ocultar información del período</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <div className="flex items-center justify-center gap-1 rounded-full bg-gray-100 p-1 mt-4 mx-auto">
-            {filterButtons.map(({ label, value }) => (
-              <Button
-                key={value}
-                size="sm"
-                variant={chartPeriod === value ? 'default' : 'ghost'}
-                onClick={() => setChartPeriod(value)}
-                className={`rounded-full px-3 text-xs sm:px-4 sm:text-sm font-medium transition-colors h-8`}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
+
+          {showPeriodInfo && (
+            <div className="text-center text-xs text-muted-foreground pt-1">
+              (Primer Semestre: Ene-Jun, Segundo Semestre: Jul-Dic)
+            </div>
+          )}
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
