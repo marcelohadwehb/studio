@@ -185,7 +185,10 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                 dataKey="value" 
                                 nameKey="name" 
                                 labelLine={false} 
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent }) => {
+                                  if (!name || percent === undefined) return null;
+                                  return `${name}: ${(percent * 100).toFixed(0)}%`;
+                                }}
                                 className="text-xs"
                             >
                                  {pieChartData.map((entry, index) => (
@@ -255,7 +258,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                 tickLine={false} 
                                 axisLine={false}
                                 tickMargin={10}
-                                width={120}
+                                width={150}
                                 className="text-xs"
                             />
                             <XAxis type="number" dataKey="" tickFormatter={compactCurrencyFormatter} />
