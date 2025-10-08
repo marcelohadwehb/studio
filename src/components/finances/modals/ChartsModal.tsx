@@ -32,16 +32,13 @@ const generateDistinctColors = (count: number): string[] => {
     return colors;
 };
 
-const compactCurrencyFormatter = (value: number) => {
-    if (value === 0) return '0';
-    return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        notation: 'compact',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1
-    }).format(value);
-};
+const compactCurrencyFormatter = new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    notation: 'compact',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1
+});
 
 
 export function ChartsModal({ 
@@ -133,7 +130,7 @@ export function ChartsModal({
 
   // Data for Budget Performance by Subcategory
   const budgetPerformanceData = useMemo(() => {
-    const data: { name: string, Presupuesto: number, Gastado: number, Diferencial: number }[] = [];
+    const data: { category: string, subcategory: string, Presupuesto: number, Gastado: number, Diferencial: number }[] = [];
     const expensesBySubcategory = transactionsForCurrentMonth
       .filter(t => t.type === 'expense' && t.subcategory)
       .reduce((acc, t) => {
@@ -141,46 +138,46 @@ export function ChartsModal({
         acc[t.subcategory!] += t.amount;
         return acc;
       }, {} as { [key: string]: number });
+      
+    const processCategory = (categoryName: string, subcategories: string[], isTemporary: boolean) => {
+        subcategories.forEach(subcat => {
+            let budgetAmount = 0;
+            if (isTemporary) {
+                const tempBudget = tempBudgets[subcat];
+                if (tempBudget && typeof tempBudget.from?.year === 'number' && typeof tempBudget.to?.year === 'number') {
+                    const fromDate = new Date(tempBudget.from.year, tempBudget.from.month, 1);
+                    const toDate = new Date(tempBudget.to.year, tempBudget.to.month + 1, 0);
+                    const currentMonthDate = new Date(currentYear, currentMonth, 1);
 
-    // Permanent Budgets
-    Object.values(categories).flat().forEach(subcat => {
-      const budgetAmount = budgets[subcat] || 0;
-      if (budgetAmount > 0) {
-        const spent = expensesBySubcategory[subcat] || 0;
-        data.push({
-          name: subcat,
-          Presupuesto: budgetAmount,
-          Gastado: spent,
-          Diferencial: budgetAmount - spent,
-        });
-      }
-    });
-
-    // Temporary Budgets active in the current month
-    Object.keys(tempBudgets).forEach(subcat => {
-      const tempBudget = tempBudgets[subcat];
-      if (tempBudget && typeof tempBudget.from?.year === 'number' && typeof tempBudget.to?.year === 'number') {
-        const fromDate = new Date(tempBudget.from.year, tempBudget.from.month, 1);
-        const toDate = new Date(tempBudget.to.year, tempBudget.to.month + 1, 0);
-        const currentMonthDate = new Date(currentYear, currentMonth, 1);
-
-        if (currentMonthDate >= fromDate && currentMonthDate <= toDate) {
-          // Avoid duplicates if a permanent budget for the same subcat exists
-          if (!data.some(d => d.name === subcat)) {
-            const budgetAmount = tempBudget.amount || 0;
+                    if (currentMonthDate >= fromDate && currentMonthDate <= toDate) {
+                        budgetAmount = tempBudget.amount || 0;
+                    }
+                }
+            } else {
+                budgetAmount = budgets[subcat] || 0;
+            }
+            
             const spent = expensesBySubcategory[subcat] || 0;
-             data.push({
-              name: subcat,
-              Presupuesto: budgetAmount,
-              Gastado: spent,
-              Diferencial: budgetAmount - spent,
+            data.push({
+                category: categoryName,
+                subcategory: subcat,
+                Presupuesto: budgetAmount,
+                Gastado: spent,
+                Diferencial: budgetAmount - spent,
             });
-          }
-        }
-      }
-    });
+        });
+    };
+
+    Object.entries(categories).forEach(([cat, subcats]) => processCategory(cat, subcats, false));
+    Object.entries(tempCategories).forEach(([cat, subcats]) => processCategory(cat, subcats, true));
     
-    return data.sort((a,b) => b.Presupuesto - a.Presupuesto);
+    return data.reduce((acc, item) => {
+        if (!acc[item.category]) {
+            acc[item.category] = [];
+        }
+        acc[item.category].push(item);
+        return acc;
+    }, {} as Record<string, typeof data>);
 
   }, [transactionsForCurrentMonth, categories, budgets, tempCategories, tempBudgets, currentMonth, currentYear]);
 
@@ -253,7 +250,7 @@ export function ChartsModal({
                         <BarChart data={barChartData} accessibilityLayer>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="text-xs" />
-                            <YAxis tickFormatter={compactCurrencyFormatter} className="text-xs" />
+                            <YAxis tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} className="text-xs" />
                             <ChartTooltip 
                                 content={({ payload, label }) => {
                                     if(payload && payload.length > 0) {
@@ -283,73 +280,81 @@ export function ChartsModal({
                 </CardContent>
             </Card>
             
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Rendimiento de Presupuestos por Subcategoría</CardTitle>
-                </CardHeader>
-                <CardContent>
-                   {budgetPerformanceData.length > 0 ? (
-                    <ChartContainer config={budgetPerformanceConfig} className="h-[400px] w-full">
-                        <BarChart 
-                            layout="vertical" 
-                            data={budgetPerformanceData} 
-                            margin={{ left: 20 }}
-                        >
-                           <CartesianGrid horizontal={false} />
-                            <YAxis 
-                                dataKey="name" 
-                                type="category"
-                                tickLine={false} 
-                                axisLine={false}
-                                tickMargin={5}
-                                width={150}
-                                className="text-xs"
-                            />
-                            <XAxis type="number" dataKey="Presupuesto" tickFormatter={compactCurrencyFormatter} />
-                            <ChartTooltip 
-                                cursor={{fill: 'hsl(var(--muted))'}}
-                                content={({ payload, label }) => {
-                                  if (payload && payload.length > 0) {
-                                    const performanceItem = budgetPerformanceData.find(item => item.name === label);
-                                    if (!performanceItem) return null;
+            <div className="lg:col-span-2 space-y-6">
+                <h3 className="text-xl font-semibold text-center -mb-2">Rendimiento de Presupuestos por Subcategoría</h3>
+                {Object.entries(budgetPerformanceData).map(([category, subcategoryData]) => {
+                    const chartHeight = subcategoryData.length * 35 + 50; // 35px per bar + 50px for padding/axis
+                    return (
+                        <Card key={category}>
+                            <CardHeader>
+                                <CardTitle>{category}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                               {subcategoryData.length > 0 ? (
+                                <ChartContainer config={budgetPerformanceConfig} className={`h-[${chartHeight}px] w-full`}>
+                                    <BarChart 
+                                        layout="vertical" 
+                                        data={subcategoryData} 
+                                        margin={{ left: 20, top: 5, right: 20, bottom: 20 }}
+                                    >
+                                       <CartesianGrid horizontal={false} />
+                                        <YAxis 
+                                            dataKey="subcategory" 
+                                            type="category"
+                                            tickLine={false} 
+                                            axisLine={false}
+                                            tickMargin={5}
+                                            width={150}
+                                            className="text-xs"
+                                        />
+                                        <XAxis type="number" tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} />
+                                        <ChartTooltip 
+                                            cursor={{fill: 'hsl(var(--muted))'}}
+                                            content={({ payload, label }) => {
+                                              if (payload && payload.length > 0) {
+                                                const performanceItem = subcategoryData.find(item => item.subcategory === label);
+                                                if (!performanceItem) return null;
 
-                                    return (
-                                      <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
-                                        <p className="font-bold mb-2">{label}</p>
-                                        <div className="space-y-1">
-                                          <div className="flex justify-between items-center gap-4">
-                                            <span>Presupuesto:</span>
-                                            <span className="font-bold">{formatCurrency(performanceItem.Presupuesto)}</span>
-                                          </div>
-                                          <div className="flex justify-between items-center gap-4">
-                                            <span>Gastado:</span>
-                                            <span className="font-bold">{formatCurrency(performanceItem.Gastado)}</span>
-                                          </div>
-                                        </div>
-                                        <div className="border-t mt-2 pt-2 flex justify-between font-bold">
-                                            <span>Diferencial:</span>
-                                            <span className={performanceItem.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                                {formatCurrency(performanceItem.Diferencial)}
-                                            </span>
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                }}
-                            />
-                            <ChartLegend content={<ChartLegendContent />} />
-                            <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
-                            <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
-                        </BarChart>
-                    </ChartContainer>
-                    ) : (
-                      <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                        No hay presupuestos definidos para este mes.
-                      </div>
-                    )}
-                </CardContent>
-            </Card>
+                                                return (
+                                                  <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
+                                                    <p className="font-bold mb-2">{label}</p>
+                                                    <div className="space-y-1">
+                                                      <div className="flex justify-between items-center gap-4">
+                                                        <span>Presupuesto:</span>
+                                                        <span className="font-bold">{formatCurrency(performanceItem.Presupuesto)}</span>
+                                                      </div>
+                                                      <div className="flex justify-between items-center gap-4">
+                                                        <span>Gastado:</span>
+                                                        <span className="font-bold">{formatCurrency(performanceItem.Gastado)}</span>
+                                                      </div>
+                                                    </div>
+                                                    <div className="border-t mt-2 pt-2 flex justify-between font-bold">
+                                                        <span>Diferencial:</span>
+                                                        <span className={performanceItem.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                                            {formatCurrency(performanceItem.Diferencial)}
+                                                        </span>
+                                                    </div>
+                                                  </div>
+                                                );
+                                              }
+                                              return null;
+                                            }}
+                                        />
+                                        <ChartLegend content={<ChartLegendContent />} />
+                                        <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
+                                        <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
+                                    </BarChart>
+                                </ChartContainer>
+                                ) : (
+                                  <div className="h-[100px] flex items-center justify-center text-muted-foreground">
+                                    No hay subcategorías para esta categoría.
+                                  </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </div>
         </div>
 
 
