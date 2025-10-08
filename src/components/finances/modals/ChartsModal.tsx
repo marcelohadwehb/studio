@@ -28,6 +28,17 @@ const generateDistinctColors = (count: number): string[] => {
     return colors;
 };
 
+const compactCurrencyFormatter = (value: number) => {
+    return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        notation: 'compact',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(value);
+};
+
+
 export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, formatCurrency }: ChartsModalProps) {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
@@ -200,7 +211,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                         <BarChart data={barChartData} accessibilityLayer>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="text-xs" />
-                            <YAxis tickFormatter={(value) => `$${Number(value) / 1000}k`} className="text-xs" />
+                            <YAxis tickFormatter={compactCurrencyFormatter} className="text-xs" />
                             <ChartTooltip 
                                 content={({ payload, label }) => {
                                     if(payload && payload.length > 0) {
@@ -236,7 +247,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                 <CardContent>
                    {subcategoryChartData.length > 0 ? (
                     <ChartContainer config={subcategoryChartConfig} className="h-[400px] w-full">
-                        <BarChart data={subcategoryChartData} layout="vertical" stackOffset="expand">
+                        <BarChart data={subcategoryChartData} layout="vertical">
                            <CartesianGrid horizontal={false} />
                             <YAxis 
                                 dataKey="category" 
@@ -247,7 +258,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                 width={120}
                                 className="text-xs"
                             />
-                            <XAxis type="number" hide={true} />
+                            <XAxis type="number" dataKey="" tickFormatter={compactCurrencyFormatter} />
                             <ChartTooltip 
                                 content={({ payload, label }) => {
                                   if (payload && payload.length > 0) {
