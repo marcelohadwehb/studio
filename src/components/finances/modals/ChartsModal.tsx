@@ -29,12 +29,13 @@ const generateDistinctColors = (count: number): string[] => {
 };
 
 const compactCurrencyFormatter = (value: number) => {
+    if (value === 0) return '0';
     return new Intl.NumberFormat('es-CL', {
         style: 'currency',
         currency: 'CLP',
         notation: 'compact',
         minimumFractionDigits: 0,
-        maximumFractionDigits: 0
+        maximumFractionDigits: 1
     }).format(value);
 };
 
@@ -164,7 +165,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                 <CardContent>
                     {pieChartData.length > 0 ? (
                     <ChartContainer config={pieChartConfig} className="mx-auto aspect-square h-[300px]">
-                        <PieChart>
+                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                             <ChartTooltip 
                                 cursor={false}
                                 content={({ payload }) => {
@@ -261,7 +262,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                 width={150}
                                 className="text-xs"
                             />
-                            <XAxis type="number" dataKey="" tickFormatter={compactCurrencyFormatter} />
+                            <XAxis type="number" tickFormatter={compactCurrencyFormatter} />
                             <ChartTooltip 
                                 content={({ payload, label }) => {
                                   if (payload && payload.length > 0) {
