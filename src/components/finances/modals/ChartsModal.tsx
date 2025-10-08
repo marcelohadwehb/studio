@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, BarChart, XAxis, YAxis, Pie, PieChart, Cell, CartesianGrid } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
 
@@ -61,7 +61,7 @@ export function ChartsModal({
     );
   }, [allTransactions, currentMonth, currentYear]);
 
-  // Data for Monthly Expenses by Category (Bar Chart)
+  // Data for Monthly Expenses by Category (Horizontal Bar Chart)
   const { categoryExpensesData, categoryExpensesConfig } = useMemo(() => {
     const expenses = transactionsForCurrentMonth.filter(t => t.type === 'expense');
     
@@ -72,7 +72,7 @@ export function ChartsModal({
       return acc;
     }, {} as { [key: string]: number });
     
-    const sortedCategories = Object.entries(expensesByCategory).sort(([, a], [, b]) => a - b);
+    const sortedCategories = Object.entries(expensesByCategory).sort(([, a], [, b]) => b - a);
     
     const chartColors = generateDistinctColors(sortedCategories.length);
 
@@ -138,7 +138,7 @@ export function ChartsModal({
       }, {} as { [key: string]: number });
       
     const processCategory = (categoryName: string, subcategories: string[], isTemporary: boolean) => {
-        subcategories.sort((a, b) => a.localeCompare(b)).forEach(subcat => {
+        subcategories.forEach(subcat => {
             let budgetAmount = 0;
             if (isTemporary) {
                 const tempBudget = tempBudgets[subcat];
@@ -166,8 +166,8 @@ export function ChartsModal({
         });
     };
 
-    Object.keys(categories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, categories[cat], false));
-    Object.keys(tempCategories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, tempCategories[cat], true));
+    Object.keys(categories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, categories[cat].sort((a,b) => a.localeCompare(b)), false));
+    Object.keys(tempCategories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, tempCategories[cat].sort((a,b) => a.localeCompare(b)), true));
     
     return data.reduce((acc, item) => {
         if (!acc[item.category]) {
@@ -178,6 +178,37 @@ export function ChartsModal({
     }, {} as Record<string, typeof data>);
 
   }, [transactionsForCurrentMonth, categories, budgets, tempCategories, tempBudgets, currentMonth, currentYear]);
+
+  // Data for Budget Performance by Category
+  const categoryBudgetPerformanceData = useMemo(() => {
+    const performanceData: { name: string, Presupuesto: number, Gastado: number, Diferencial: number }[] = [];
+    const allCategoryNames = [...Object.keys(categories), ...Object.keys(tempCategories)];
+    const uniqueCategoryNames = [...new Set(allCategoryNames)].sort((a, b) => a.localeCompare(b));
+
+    uniqueCategoryNames.forEach(cat => {
+        const subcats = (categories[cat] || []).concat(tempCategories[cat] || []);
+        let totalBudget = 0;
+        let totalSpent = 0;
+
+        subcats.forEach(subcat => {
+            const performanceItem = Object.values(budgetPerformanceData).flat().find(item => item.subcategory === subcat && item.category === cat);
+            if (performanceItem) {
+                totalBudget += performanceItem.Presupuesto;
+                totalSpent += performanceItem.Gastado;
+            }
+        });
+        
+        performanceData.push({
+            name: cat,
+            Presupuesto: totalBudget,
+            Gastado: totalSpent,
+            Diferencial: totalBudget - totalSpent,
+        });
+    });
+
+    return performanceData;
+  }, [categories, tempCategories, budgetPerformanceData]);
+
 
   const budgetPerformanceConfig = {
     Presupuesto: { label: 'Presupuesto', color: hslToHex(210, 80, 60) },
@@ -285,6 +316,53 @@ export function ChartsModal({
                             <Bar dataKey="Gastos" fill="var(--color-Gastos)" radius={4} />
                         </BarChart>
                     </ChartContainer>
+                </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>Rendimiento de Presupuestos por Categoría</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {categoryBudgetPerformanceData.length > 0 ? (
+                        <ChartContainer config={budgetPerformanceConfig} className="w-full h-[300px]">
+                            <BarChart layout="vertical" data={categoryBudgetPerformanceData} margin={{ left: 20 }}>
+                                <CartesianGrid horizontal={false} />
+                                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={5} width={150} className="text-xs" />
+                                <XAxis type="number" tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} />
+                                <ChartTooltip
+                                    cursor={{fill: 'hsl(var(--muted))'}}
+                                    content={({ payload, label }) => {
+                                        if (payload && payload.length > 0) {
+                                            const itemData = categoryBudgetPerformanceData.find(item => item.name === label);
+                                            if (!itemData) return null;
+                                            return (
+                                                <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
+                                                    <p className="font-bold mb-2">{label}</p>
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between items-center gap-4"><span>Presupuesto:</span><span className="font-bold">{formatCurrency(itemData.Presupuesto)}</span></div>
+                                                        <div className="flex justify-between items-center gap-4"><span>Gastado:</span><span className="font-bold">{formatCurrency(itemData.Gastado)}</span></div>
+                                                    </div>
+                                                    <div className="border-t mt-2 pt-2 flex justify-between font-bold">
+                                                        <span>Diferencial:</span>
+                                                        <span className={itemData.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>{formatCurrency(itemData.Diferencial)}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <ChartLegend content={<ChartLegendContent />} />
+                                <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
+                                <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
+                            </BarChart>
+                        </ChartContainer>
+                    ) : (
+                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                            No hay datos de presupuesto para mostrar.
+                        </div>
+                    )}
                 </CardContent>
             </Card>
             
