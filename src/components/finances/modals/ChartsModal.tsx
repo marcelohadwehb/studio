@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent, ChartConfig } from '@/components/ui/chart';
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -258,179 +258,181 @@ export function ChartsModal({
           )}
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Ingresos vs. Gastos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={barChartConfig} className="h-[250px] w-full">
-                        <BarChart
-                            data={[
-                                { name: 'Ingresos', value: totalIncome, fill: 'var(--color-Ingresos)' },
-                                { name: 'Gastos', value: totalExpenses, fill: 'var(--color-Gastos)' },
-                            ]}
-                            layout="vertical"
-                            margin={{ left: 10, right: 10 }}
-                        >
-                            <CartesianGrid horizontal={false} />
-                            <YAxis
-                                dataKey="name"
-                                type="category"
-                                tickLine={false}
-                                axisLine={false}
-                                className="text-sm"
-                            />
-                            <XAxis
-                                dataKey="value"
-                                type="number"
-                                hide
-                            />
-                            <ChartTooltip 
-                                cursor={false}
-                                content={({ payload }) => {
-                                    if (payload && payload.length > 0) {
-                                        return (
-                                            <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
-                                                <p className="font-bold">{payload[0].payload.name}</p>
-                                                <p>{formatCurrency(payload[0].value as number)}</p>
-                                            </div>
-                                        )
-                                    }
-                                    return null;
-                                }}
-                            />
-                            <Bar dataKey="value" radius={5} />
-                        </BarChart>
-                    </ChartContainer>
-                </CardContent>
-            </Card>
+        <div className="max-h-[70vh] overflow-y-auto pr-2 py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="lg:col-span-2">
+                  <CardHeader>
+                      <CardTitle>Ingresos vs. Gastos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <ChartContainer config={barChartConfig} className="h-[250px] w-full">
+                          <BarChart
+                              data={[
+                                  { name: 'Ingresos', value: totalIncome, fill: 'var(--color-Ingresos)' },
+                                  { name: 'Gastos', value: totalExpenses, fill: 'var(--color-Gastos)' },
+                              ]}
+                              layout="vertical"
+                              margin={{ left: 10, right: 10 }}
+                          >
+                              <CartesianGrid horizontal={false} />
+                              <YAxis
+                                  dataKey="name"
+                                  type="category"
+                                  tickLine={false}
+                                  axisLine={false}
+                                  className="text-sm"
+                              />
+                              <XAxis
+                                  dataKey="value"
+                                  type="number"
+                                  hide
+                              />
+                              <ChartTooltip 
+                                  cursor={false}
+                                  content={({ payload }) => {
+                                      if (payload && payload.length > 0) {
+                                          return (
+                                              <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
+                                                  <p className="font-bold">{payload[0].payload.name}</p>
+                                                  <p>{formatCurrency(payload[0].value as number)}</p>
+                                              </div>
+                                          )
+                                      }
+                                      return null;
+                                  }}
+                              />
+                              <Bar dataKey="value" radius={5} />
+                          </BarChart>
+                      </ChartContainer>
+                  </CardContent>
+              </Card>
 
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Rendimiento de Presupuestos por Categoría</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {categoryBudgetPerformanceData.length > 0 ? (
-                        <ChartContainer config={budgetPerformanceConfig} className="w-full h-[300px]">
-                            <BarChart layout="vertical" data={categoryBudgetPerformanceData} margin={{ left: 20 }}>
-                                <CartesianGrid horizontal={false} />
-                                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={5} width={150} className="text-xs" />
-                                <XAxis type="number" tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} />
-                                <ChartTooltip
-                                    cursor={{fill: 'hsl(var(--muted))'}}
-                                    content={({ payload, label }) => {
-                                        if (payload && payload.length > 0) {
-                                            const itemData = categoryBudgetPerformanceData.find(item => item.name === label);
-                                            if (!itemData) return null;
-                                            return (
-                                                <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
-                                                    <p className="font-bold mb-2">{label}</p>
-                                                    <div className="space-y-1">
-                                                        <div className="flex justify-between items-center gap-4"><span>Presupuesto:</span><span className="font-bold">{formatCurrency(itemData.Presupuesto)}</span></div>
-                                                        <div className="flex justify-between items-center gap-4"><span>Gastado:</span><span className="font-bold">{formatCurrency(itemData.Gastado)}</span></div>
-                                                    </div>
-                                                    <div className="border-t mt-2 pt-2 flex justify-between font-bold">
-                                                        <span>Diferencial:</span>
-                                                        <span className={itemData.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>{formatCurrency(itemData.Diferencial)}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                                <ChartLegend content={<ChartLegendContent />} />
-                                <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
-                                <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
-                            </BarChart>
-                        </ChartContainer>
-                    ) : (
-                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                            No hay datos de presupuesto para mostrar.
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-            
-            <div className="lg:col-span-2 space-y-6">
-                <h3 className="text-xl font-semibold text-center -mb-2">Rendimiento de Presupuestos por Subcategoría</h3>
-                {Object.keys(budgetPerformanceData).sort((a,b)=> a.localeCompare(b)).map((category) => {
-                    const subcategoryData = budgetPerformanceData[category];
-                    if (subcategoryData.every(d => d.Presupuesto === 0 && d.Gastado === 0)) return null;
-
-                    const chartHeight = subcategoryData.length * 35 + 60; // 35px per bar + 60px for padding/axis/legend
-                    return (
-                        <Card key={category}>
-                            <CardHeader>
-                                <CardTitle>{category}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                               {subcategoryData.length > 0 ? (
-                                <ChartContainer config={budgetPerformanceConfig} style={{ height: `${chartHeight}px` }} className="w-full">
-                                    <BarChart 
-                                        layout="vertical" 
-                                        data={subcategoryData} 
-                                        margin={{ left: 20, top: 5, right: 20, bottom: 20 }}
-                                    >
-                                       <CartesianGrid horizontal={false} />
-                                        <YAxis 
-                                            dataKey="subcategory" 
-                                            type="category"
-                                            tickLine={false} 
-                                            axisLine={false}
-                                            tickMargin={5}
-                                            width={150}
-                                            className="text-xs"
-                                        />
-                                        <XAxis type="number" tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} />
-                                        <ChartTooltip 
-                                            cursor={{fill: 'hsl(var(--muted))'}}
-                                            content={({ payload, label }) => {
-                                              if (payload && payload.length > 0) {
-                                                const performanceItem = subcategoryData.find(item => item.subcategory === label);
-                                                if (!performanceItem) return null;
-
-                                                return (
+              <Card className="lg:col-span-2">
+                  <CardHeader>
+                      <CardTitle>Rendimiento de Presupuestos por Categoría</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      {categoryBudgetPerformanceData.length > 0 ? (
+                          <ChartContainer config={budgetPerformanceConfig} className="w-full h-[300px]">
+                              <BarChart layout="vertical" data={categoryBudgetPerformanceData} margin={{ left: 20 }}>
+                                  <CartesianGrid horizontal={false} />
+                                  <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={5} width={150} className="text-xs" />
+                                  <XAxis type="number" tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} />
+                                  <ChartTooltip
+                                      cursor={{fill: 'hsl(var(--muted))'}}
+                                      content={({ payload, label }) => {
+                                          if (payload && payload.length > 0) {
+                                              const itemData = categoryBudgetPerformanceData.find(item => item.name === label);
+                                              if (!itemData) return null;
+                                              return (
                                                   <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
-                                                    <p className="font-bold mb-2">{label}</p>
-                                                    <div className="space-y-1">
-                                                      <div className="flex justify-between items-center gap-4">
-                                                        <span>Presupuesto:</span>
-                                                        <span className="font-bold">{formatCurrency(performanceItem.Presupuesto)}</span>
+                                                      <p className="font-bold mb-2">{label}</p>
+                                                      <div className="space-y-1">
+                                                          <div className="flex justify-between items-center gap-4"><span>Presupuesto:</span><span className="font-bold">{formatCurrency(itemData.Presupuesto)}</span></div>
+                                                          <div className="flex justify-between items-center gap-4"><span>Gastado:</span><span className="font-bold">{formatCurrency(itemData.Gastado)}</span></div>
                                                       </div>
-                                                      <div className="flex justify-between items-center gap-4">
-                                                        <span>Gastado:</span>
-                                                        <span className="font-bold">{formatCurrency(performanceItem.Gastado)}</span>
+                                                      <div className="border-t mt-2 pt-2 flex justify-between font-bold">
+                                                          <span>Diferencial:</span>
+                                                          <span className={itemData.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>{formatCurrency(itemData.Diferencial)}</span>
                                                       </div>
-                                                    </div>
-                                                    <div className="border-t mt-2 pt-2 flex justify-between font-bold">
-                                                        <span>Diferencial:</span>
-                                                        <span className={performanceItem.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                                            {formatCurrency(performanceItem.Diferencial)}
-                                                        </span>
-                                                    </div>
                                                   </div>
-                                                );
-                                              }
-                                              return null;
-                                            }}
-                                        />
-                                        <ChartLegend content={<ChartLegendContent />} />
-                                        <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
-                                        <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
-                                    </BarChart>
-                                </ChartContainer>
-                                ) : (
-                                  <div className="h-[100px] flex items-center justify-center text-muted-foreground">
-                                    No hay subcategorías para esta categoría.
-                                  </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )
-                })}
-            </div>
+                                              );
+                                          }
+                                          return null;
+                                      }}
+                                  />
+                                  <ChartLegend content={<ChartLegendContent />} />
+                                  <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
+                                  <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
+                              </BarChart>
+                          </ChartContainer>
+                      ) : (
+                          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                              No hay datos de presupuesto para mostrar.
+                          </div>
+                      )}
+                  </CardContent>
+              </Card>
+              
+              <div className="lg:col-span-2 space-y-6">
+                  <h3 className="text-xl font-semibold text-center -mb-2">Rendimiento de Presupuestos por Subcategoría</h3>
+                  {Object.keys(budgetPerformanceData).sort((a,b)=> a.localeCompare(b)).map((category) => {
+                      const subcategoryData = budgetPerformanceData[category];
+                      if (subcategoryData.every(d => d.Presupuesto === 0 && d.Gastado === 0)) return null;
+
+                      const chartHeight = subcategoryData.length * 35 + 60; // 35px per bar + 60px for padding/axis/legend
+                      return (
+                          <Card key={category}>
+                              <CardHeader>
+                                  <CardTitle>{category}</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {subcategoryData.length > 0 ? (
+                                  <ChartContainer config={budgetPerformanceConfig} style={{ height: `${chartHeight}px` }} className="w-full">
+                                      <BarChart 
+                                          layout="vertical" 
+                                          data={subcategoryData} 
+                                          margin={{ left: 20, top: 5, right: 20, bottom: 20 }}
+                                      >
+                                        <CartesianGrid horizontal={false} />
+                                          <YAxis 
+                                              dataKey="subcategory" 
+                                              type="category"
+                                              tickLine={false} 
+                                              axisLine={false}
+                                              tickMargin={5}
+                                              width={150}
+                                              className="text-xs"
+                                          />
+                                          <XAxis type="number" tickFormatter={(value) => compactCurrencyFormatter.format(value as number)} />
+                                          <ChartTooltip 
+                                              cursor={{fill: 'hsl(var(--muted))'}}
+                                              content={({ payload, label }) => {
+                                                if (payload && payload.length > 0) {
+                                                  const performanceItem = subcategoryData.find(item => item.subcategory === label);
+                                                  if (!performanceItem) return null;
+
+                                                  return (
+                                                    <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
+                                                      <p className="font-bold mb-2">{label}</p>
+                                                      <div className="space-y-1">
+                                                        <div className="flex justify-between items-center gap-4">
+                                                          <span>Presupuesto:</span>
+                                                          <span className="font-bold">{formatCurrency(performanceItem.Presupuesto)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center gap-4">
+                                                          <span>Gastado:</span>
+                                                          <span className="font-bold">{formatCurrency(performanceItem.Gastado)}</span>
+                                                        </div>
+                                                      </div>
+                                                      <div className="border-t mt-2 pt-2 flex justify-between font-bold">
+                                                          <span>Diferencial:</span>
+                                                          <span className={performanceItem.Diferencial >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                                              {formatCurrency(performanceItem.Diferencial)}
+                                                          </span>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                }
+                                                return null;
+                                              }}
+                                          />
+                                          <ChartLegend content={<ChartLegendContent />} />
+                                          <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
+                                          <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
+                                      </BarChart>
+                                  </ChartContainer>
+                                  ) : (
+                                    <div className="h-[100px] flex items-center justify-center text-muted-foreground">
+                                      No hay subcategorías para esta categoría.
+                                    </div>
+                                  )}
+                              </CardContent>
+                          </Card>
+                      )
+                  })}
+              </div>
+          </div>
         </div>
 
 
