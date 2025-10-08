@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent, ChartConfig } from '@/components/ui/chart';
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
 
@@ -33,8 +33,8 @@ const compactCurrencyFormatter = new Intl.NumberFormat('es-CL', {
 
 const filterButtons: { label: string; value: ChartPeriod }[] = [
     { label: 'Mes', value: 'month' },
-    { label: 'Enero-Junio', value: 'firstHalf' },
-    { label: 'Julio-Diciembre', value: 'secondHalf' },
+    { label: 'Primer Semestre', value: 'firstHalf' },
+    { label: 'Segundo Semestre', value: 'secondHalf' },
     { label: 'Año', value: 'year' },
 ];
 
@@ -218,6 +218,9 @@ export function ChartsModal({
           <DialogDescription className="text-center pt-2">
             Análisis visual de tus finanzas para {periodDescription()}.
           </DialogDescription>
+          <div className="text-center text-xs text-muted-foreground">
+            (Primer Semestre: Ene-Jun, Segundo Semestre: Jul-Dic)
+          </div>
           <div className="flex items-center justify-center gap-1 rounded-full bg-gray-100 p-1 mt-4 mx-auto">
             {filterButtons.map(({ label, value }) => (
               <Button
@@ -338,7 +341,7 @@ export function ChartsModal({
             
             <div className="lg:col-span-2 space-y-6">
                 <h3 className="text-xl font-semibold text-center -mb-2">Rendimiento de Presupuestos por Subcategoría</h3>
-                {Object.keys(budgetPerformanceData).map((category) => {
+                {Object.keys(budgetPerformanceData).sort((a,b)=> a.localeCompare(b)).map((category) => {
                     const subcategoryData = budgetPerformanceData[category];
                     if (subcategoryData.every(d => d.Presupuesto === 0 && d.Gastado === 0)) return null;
 
