@@ -81,7 +81,7 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl w-[95vw] sm:w-full">
+      <DialogContent className="sm:max-w-4xl w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
             <Paintbrush className="h-6 w-6" /> Personalizar Tema
@@ -95,37 +95,38 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
           {/* Preview Section */}
           <div className="space-y-4">
             <h3 className="font-bold text-center text-lg">Previsualización de Componentes</h3>
-            <Card className="p-4" style={{ 
+            <Card className="p-4 space-y-4" style={{ 
                 backgroundColor: `hsl(var(--background))`, 
                 borderColor: `hsl(var(--border))` 
             }}>
-              <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Título de Ejemplo</h4>
-              <p className="text-sm mb-4" style={{ color: `hsl(var(--muted-foreground))`}}>Este es un texto de párrafo de ejemplo.</p>
-              <div className="flex flex-wrap gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button style={{ 
-                        backgroundColor: `hsl(var(--button-primary))`, 
-                        color: `hsl(var(--button-primary-foreground))`
-                      }}>Botón Principal</Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Botón con estilo primario</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                 <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="secondary">Botón Secundario</Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Botón con estilo secundario</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              <div>
+                <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Botones Principales</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Button style={{ 
+                    backgroundColor: `hsl(var(--button-primary))`, 
+                    color: `hsl(var(--button-primary-foreground))`
+                  }}>Guardar</Button>
+                  <Button variant="secondary">Cancelar</Button>
+                </div>
               </div>
-              <div className="flex gap-2 mt-4">
-                <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-1))`}}></div>
-                <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-2))`}}></div>
-                <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-3))`}}></div>
+              <div>
+                <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Botones de Acción</h4>
+                <div className="flex flex-wrap gap-2">
+                   <Button style={{ backgroundColor: 'hsl(var(--button-income))', color: 'hsl(var(--button-income-foreground))' }}>Ingreso</Button>
+                   <Button style={{ backgroundColor: 'hsl(var(--button-expense))', color: 'hsl(var(--button-expense-foreground))' }}>Gasto</Button>
+                   <Button style={{ backgroundColor: 'hsl(var(--button-chart))', color: 'hsl(var(--button-chart-foreground))' }}>Gráficos</Button>
+                   <Button style={{ backgroundColor: 'hsl(var(--button-budget))', color: 'hsl(var(--button-budget-foreground))' }}>Presupuestos</Button>
+                   <Button style={{ backgroundColor: 'hsl(var(--button-records))', color: 'hsl(var(--button-records-foreground))' }}>Registros</Button>
+                   <Button style={{ backgroundColor: 'hsl(var(--button-categories))', color: 'hsl(var(--button-categories-foreground))' }}>Categorías</Button>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Gráficos</h4>
+                <div className="flex gap-2 mt-4">
+                  <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-1))`}}></div>
+                  <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-2))`}}></div>
+                  <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-3))`}}></div>
+                </div>
               </div>
             </Card>
           </div>
@@ -178,11 +179,14 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
                 <ColorInput label="Principal (títulos, íconos)" id="primary" value={theme.primary} onChange={handleColorChange} />
                 <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
                 <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
-                <ColorInput label="Botón Principal" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
                 <hr className="my-2 border-border" />
+                <ColorInput label="Botón Principal (Guardar)" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
                 <ColorInput label="Botón Ingreso" id="buttonIncome" value={theme.buttonIncome} onChange={handleColorChange} />
                 <ColorInput label="Botón Gasto" id="buttonExpense" value={theme.buttonExpense} onChange={handleColorChange} />
                 <ColorInput label="Botón Gráfico" id="buttonChart" value={theme.buttonChart} onChange={handleColorChange} />
+                <ColorInput label="Botón Presupuesto" id="buttonBudget" value={theme.buttonBudget} onChange={handleColorChange} />
+                <ColorInput label="Botón Registros" id="buttonRecords" value={theme.buttonRecords} onChange={handleColorChange} />
+                <ColorInput label="Botón Categorías" id="buttonCategories" value={theme.buttonCategories} onChange={handleColorChange} />
                </div>
             </div>
           </div>

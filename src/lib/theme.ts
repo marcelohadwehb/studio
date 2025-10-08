@@ -6,6 +6,9 @@ export interface AppTheme {
   buttonIncome: string;
   buttonExpense: string;
   buttonChart: string;
+  buttonBudget: string;
+  buttonRecords: string;
+  buttonCategories: string;
 }
 
 export interface PresetTheme {
@@ -24,6 +27,9 @@ export const presetThemes: PresetTheme[] = [
       buttonIncome: '#CFFDDF',
       buttonExpense: '#FFD6D6',
       buttonChart: '#bde0fe',
+      buttonBudget: '#e9edc9',
+      buttonRecords: '#e9edc9',
+      buttonCategories: '#e9edc9',
     },
   },
   {
@@ -36,6 +42,9 @@ export const presetThemes: PresetTheme[] = [
       buttonIncome: '#48cae4',
       buttonExpense: '#ef476f',
       buttonChart: '#0077b6',
+      buttonBudget: '#adb5bd',
+      buttonRecords: '#adb5bd',
+      buttonCategories: '#adb5bd',
     },
   },
   {
@@ -48,6 +57,9 @@ export const presetThemes: PresetTheme[] = [
       buttonIncome: '#39ff14',
       buttonExpense: '#f72585',
       buttonChart: '#4cc9f0',
+      buttonBudget: '#480ca8',
+      buttonRecords: '#480ca8',
+      buttonCategories: '#480ca8',
     },
   },
   {
@@ -60,6 +72,9 @@ export const presetThemes: PresetTheme[] = [
       buttonIncome: '#588157',
       buttonExpense: '#c1121f',
       buttonChart: '#3a5a40',
+      buttonBudget: '#dad7cd',
+      buttonRecords: '#dad7cd',
+      buttonCategories: '#dad7cd',
     },
   },
   {
@@ -72,6 +87,9 @@ export const presetThemes: PresetTheme[] = [
       buttonIncome: '#fca311',
       buttonExpense: '#e63946',
       buttonChart: '#f77f00',
+      buttonBudget: '#ffd6a5',
+      buttonRecords: '#ffd6a5',
+      buttonCategories: '#ffd6a5',
     },
   },
 ];
@@ -144,6 +162,9 @@ export function applyTheme(theme: AppTheme) {
   setCssVar(root, '--button-income', theme.buttonIncome);
   setCssVar(root, '--button-expense', theme.buttonExpense);
   setCssVar(root, '--button-chart', theme.buttonChart);
+  setCssVar(root, '--button-budget', theme.buttonBudget);
+  setCssVar(root, '--button-records', theme.buttonRecords);
+  setCssVar(root, '--button-categories', theme.buttonCategories);
 
   const primaryHsl = hexToHsl(theme.primary);
   if (primaryHsl) {
@@ -175,5 +196,8 @@ export function getDefaultTheme(): AppTheme {
     buttonIncome: '#22c55e', // Green
     buttonExpense: '#ef4444', // Red
     buttonChart: '#3b82f6', // Blue
+    buttonBudget: '#d1d5db', // Gray-300
+    buttonRecords: '#d1d5db', // Gray-300
+    buttonCategories: '#d1d5db', // Gray-300
   };
 }

@@ -38,6 +38,12 @@
     --button-expense-foreground: 210 40% 98%;
     --button-chart: 217 91% 60%; /* Blue */
     --button-chart-foreground: 210 40% 98%;
+    --button-budget: 240 4.8% 85.9%;
+    --button-budget-foreground: 240 5.9% 10%;
+    --button-records: 240 4.8% 85.9%;
+    --button-records-foreground: 240 5.9% 10%;
+    --button-categories: 240 4.8% 85.9%;
+    --button-categories-foreground: 240 5.9% 10%;
   }
  
   .dark {
@@ -74,6 +80,12 @@
     --button-expense-foreground: 210 40% 98%;
     --button-chart: 217 91% 73%;
     --button-chart-foreground: 240 5.9% 10%;
+    --button-budget: 240 3.7% 15.9%;
+    --button-budget-foreground: 0 0% 98%;
+    --button-records: 240 3.7% 15.9%;
+    --button-records-foreground: 0 0% 98%;
+    --button-categories: 240 3.7% 15.9%;
+    --button-categories-foreground: 0 0% 98%;
   }
 }
  
