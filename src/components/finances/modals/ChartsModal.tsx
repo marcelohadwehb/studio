@@ -61,11 +61,10 @@ export function ChartsModal({
     );
   }, [allTransactions, currentMonth, currentYear]);
 
-  // Data for Monthly Expenses by Category (Pie Chart)
-  const { pieChartData, pieChartConfig } = useMemo(() => {
+  // Data for Monthly Expenses by Category (Bar Chart)
+  const { categoryExpensesData, categoryExpensesConfig } = useMemo(() => {
     const expenses = transactionsForCurrentMonth.filter(t => t.type === 'expense');
-    const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
-
+    
     const expensesByCategory = expenses.reduce((acc, t) => {
       const category = t.category || 'Sin Categoría';
       if (!acc[category]) acc[category] = 0;
@@ -73,26 +72,25 @@ export function ChartsModal({
       return acc;
     }, {} as { [key: string]: number });
     
-    const sortedCategories = Object.entries(expensesByCategory).sort(([, a], [, b]) => b - a);
+    const sortedCategories = Object.entries(expensesByCategory).sort(([, a], [, b]) => a - b);
     
-    const pieChartColors = generateDistinctColors(sortedCategories.length);
+    const chartColors = generateDistinctColors(sortedCategories.length);
 
-    const pieChartData = sortedCategories.map(([name, value], index) => ({
+    const data = sortedCategories.map(([name, value], index) => ({
       name,
       value,
-      fill: pieChartColors[index],
-      percentage: totalExpenses > 0 ? (value / totalExpenses) * 100 : 0,
+      fill: chartColors[index],
     }));
 
-    const pieChartConfig = sortedCategories.reduce((acc, [name], index) => {
+    const config = sortedCategories.reduce((acc, [name], index) => {
       acc[name] = {
         label: name,
-        color: pieChartColors[index],
+        color: chartColors[index],
       };
       return acc;
     }, {} as ChartConfig);
 
-    return { pieChartData, pieChartConfig };
+    return { categoryExpensesData: data, categoryExpensesConfig: config };
   }, [transactionsForCurrentMonth]);
 
 
@@ -203,35 +201,45 @@ export function ChartsModal({
                     <CardTitle>Gastos por Categoría (Mes Actual)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {pieChartData.length > 0 ? (
-                    <ChartContainer config={pieChartConfig} className="mx-auto aspect-square h-[300px]">
-                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                            <ChartTooltip 
-                                cursor={false}
-                                content={({ payload }) => {
-                                    if (payload && payload.length > 0) {
-                                        const { name, value, percentage } = payload[0].payload;
-                                        return (
-                                            <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
-                                                <p className="font-bold">{name}</p>
-                                                <p className="text-foreground">{formatCurrency(value as number)} ({percentage.toFixed(1)}%)</p>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                }}
-                            />
-                            <Pie 
-                                data={pieChartData} 
-                                dataKey="value" 
-                                nameKey="name" 
-                            >
-                                 {pieChartData.map((entry) => (
-                                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                                ))}
-                            </Pie>
-                            <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-                        </PieChart>
+                    {categoryExpensesData.length > 0 ? (
+                    <ChartContainer config={categoryExpensesConfig} className="w-full h-[300px]">
+                      <BarChart
+                        layout="vertical"
+                        data={categoryExpensesData}
+                        margin={{ left: 10, right: 10 }}
+                        accessibilityLayer
+                      >
+                        <CartesianGrid horizontal={false} />
+                        <YAxis
+                          dataKey="name"
+                          type="category"
+                          tickLine={false}
+                          tickMargin={10}
+                          axisLine={false}
+                          className="text-xs"
+                          width={120}
+                        />
+                        <XAxis dataKey="value" type="number" hide />
+                        <ChartTooltip
+                          cursor={{ fill: 'hsl(var(--muted))' }}
+                          content={({ payload, label }) => {
+                            if (payload && payload.length > 0) {
+                              return (
+                                <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
+                                  <p className="font-bold">{label}</p>
+                                  <p className="text-foreground">{formatCurrency(payload[0].value as number)}</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="value" layout="vertical" radius={4}>
+                          {categoryExpensesData.map((entry) => (
+                              <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
                     </ChartContainer>
                      ) : (
                         <div className="h-[300px] flex items-center justify-center text-muted-foreground">
