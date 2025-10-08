@@ -175,8 +175,8 @@ export function TemporaryBudgets({ appId, formatCurrency, currentDate, transacti
                     
                     return (
                       <div key={subcat} className="border sm:border-none p-2 sm:p-0 rounded-md">
-                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px] sm:gap-x-4 items-center text-sm sm:px-2 sm:py-1">
-                          <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal">{subcat}</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-[1fr_100px_100px_100px] sm:gap-x-4 items-center text-sm sm:px-2 sm:py-1">
+                          <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal col-span-2 sm:col-span-1">{subcat}</label>
                            <div className="text-right flex justify-between sm:block mt-2 sm:mt-0"><span className="sm:hidden text-muted-foreground">Gastado:</span>{formatCurrency(spent)}</div>
                           <div className="text-right flex justify-between sm:block"><span className="sm:hidden text-muted-foreground">Presupuesto:</span>{formatCurrency(budgetAmount)}</div>
                           <div className={`text-right font-medium flex justify-between sm:block ${diffColor}`}><span className="sm:hidden text-muted-foreground">Diferencial:</span>{formatCurrency(diff)}</div>

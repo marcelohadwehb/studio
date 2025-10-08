@@ -150,9 +150,9 @@ export function PermanentBudgets({ categories, budgets, transactions, appId, for
                     const subcatDiffColor = subcatDiff >= 0 ? 'text-green-600' : 'text-red-600';
                     
                     return (
-                      <div key={subcat} className="text-sm px-2 py-2 sm:py-1 rounded-md hover:bg-muted/50 border sm:border-none">
-                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px_40px] sm:gap-x-4 items-center">
-                          <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal">{subcat}</label>
+                      <div key={subcat} className="text-sm px-2 py-2 sm:py-1 rounded-md hover:bg-muted/50 border-b sm:border-none">
+                        <div className="grid grid-cols-2 sm:grid-cols-[1fr_100px_100px_100px_40px] sm:gap-x-4 items-center">
+                          <label htmlFor={`budget-${subcat}`} className="font-semibold sm:font-normal col-span-2 sm:col-span-1">{subcat}</label>
                           <div className="text-right flex justify-between items-center sm:block mt-2 sm:mt-0">
                               <span className='sm:hidden text-muted-foreground'>Gastado:</span>
                               <span>{formatCurrency(subcatSpent)}</span>

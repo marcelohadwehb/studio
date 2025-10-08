@@ -150,7 +150,9 @@ const setCssVar = (root: HTMLElement, varName: string, hexColor: string) => {
         // Special logic to set foreground color for buttons to ensure readability
         const isDarkBackground = hsl[2] < 50;
         if (varName.startsWith('--button-') || varName === '--primary') {
-             root.style.setProperty(`${varName}-foreground`, isDarkBackground ? '210 40% 98%' : '240 10% 3.9%');
+             const foregroundVarName = `${varName}-foreground`;
+             const foregroundValue = isDarkBackground ? '210 40% 98%' : '240 10% 3.9%';
+             root.style.setProperty(foregroundVarName, foregroundValue);
         }
     }
 };
