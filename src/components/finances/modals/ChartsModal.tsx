@@ -21,17 +21,6 @@ interface ChartsModalProps {
   tempBudgets: TemporaryBudgets;
 }
 
-const generateDistinctColors = (count: number): string[] => {
-    const colors = [];
-    const saturation = 70;
-    const lightness = 55;
-    for (let i = 0; i < count; i++) {
-        const hue = (i * 137.508) % 360; // Use golden angle for distinct colors
-        colors.push(hslToHex(hue, saturation, lightness));
-    }
-    return colors;
-};
-
 const compactCurrencyFormatter = new Intl.NumberFormat('es-CL', {
     style: 'currency',
     currency: 'CLP',
@@ -60,39 +49,6 @@ export function ChartsModal({
       t => new Date(t.timestamp).getMonth() === currentMonth && new Date(t.timestamp).getFullYear() === currentYear
     );
   }, [allTransactions, currentMonth, currentYear]);
-
-  // Data for Monthly Expenses by Category (Horizontal Bar Chart)
-  const { categoryExpensesData, categoryExpensesConfig } = useMemo(() => {
-    const expenses = transactionsForCurrentMonth.filter(t => t.type === 'expense');
-    
-    const expensesByCategory = expenses.reduce((acc, t) => {
-      const category = t.category || 'Sin Categoría';
-      if (!acc[category]) acc[category] = 0;
-      acc[category] += t.amount;
-      return acc;
-    }, {} as { [key: string]: number });
-    
-    const sortedCategories = Object.entries(expensesByCategory).sort(([, a], [, b]) => b - a);
-    
-    const chartColors = generateDistinctColors(sortedCategories.length);
-
-    const data = sortedCategories.map(([name, value], index) => ({
-      name,
-      value,
-      fill: chartColors[index],
-    }));
-
-    const config = sortedCategories.reduce((acc, [name], index) => {
-      acc[name] = {
-        label: name,
-        color: chartColors[index],
-      };
-      return acc;
-    }, {} as ChartConfig);
-
-    return { categoryExpensesData: data, categoryExpensesConfig: config };
-  }, [transactionsForCurrentMonth]);
-
 
   // Data for Income vs Expense (Bar Chart)
   const barChartData = useMemo(() => {
@@ -200,6 +156,15 @@ export function ChartsModal({
             if (performanceItem) {
                 totalBudget += performanceItem.Presupuesto;
                 totalSpent += performanceItem.Gastado;
+            } else {
+                 const expensesBySubcategory = transactionsForCurrentMonth
+                    .filter(t => t.type === 'expense' && t.subcategory)
+                    .reduce((acc, t) => {
+                        if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
+                        acc[t.subcategory!] += t.amount;
+                        return acc;
+                    }, {} as { [key: string]: number });
+                 totalSpent += expensesBySubcategory[subcat] || 0;
             }
         });
         
@@ -214,7 +179,7 @@ export function ChartsModal({
     });
 
     return performanceData;
-  }, [categories, tempCategories, budgetPerformanceData]);
+  }, [categories, tempCategories, budgetPerformanceData, transactionsForCurrentMonth]);
 
 
   const budgetPerformanceConfig = {
@@ -234,60 +199,7 @@ export function ChartsModal({
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto pr-2">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Gastos por Categoría (Mes Actual)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {categoryExpensesData.length > 0 ? (
-                    <ChartContainer config={categoryExpensesConfig} className="w-full h-[300px]">
-                      <BarChart
-                        layout="vertical"
-                        data={categoryExpensesData}
-                        margin={{ left: 10, right: 10 }}
-                        accessibilityLayer
-                      >
-                        <CartesianGrid horizontal={false} />
-                        <YAxis
-                          dataKey="name"
-                          type="category"
-                          tickLine={false}
-                          tickMargin={10}
-                          axisLine={false}
-                          className="text-xs"
-                          width={150}
-                        />
-                        <XAxis dataKey="value" type="number" hide />
-                        <ChartTooltip
-                          cursor={{ fill: 'hsl(var(--muted))' }}
-                          content={({ payload, label }) => {
-                            if (payload && payload.length > 0) {
-                              return (
-                                <div className="bg-background p-2 border rounded-lg shadow-lg text-sm">
-                                  <p className="font-bold">{label}</p>
-                                  <p className="text-foreground">{formatCurrency(payload[0].value as number)}</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Bar dataKey="value" layout="vertical" radius={4}>
-                          {categoryExpensesData.map((entry) => (
-                              <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ChartContainer>
-                     ) : (
-                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                            No hay gastos registrados este mes.
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card>
+            <Card className="lg:col-span-2">
                 <CardHeader>
                     <CardTitle>Ingresos vs. Gastos (Últimos 6 meses)</CardTitle>
                 </CardHeader>
