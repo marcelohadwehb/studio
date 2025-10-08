@@ -220,7 +220,6 @@ export function FinancesDashboard() {
     ]);
     const transCsv = toCsv(transHeaders, transRows);
 
-    // 2. Budgets CSV
     const expensesBySubcategory = transToExport
         .filter(t => t.type === 'expense' && t.subcategory)
         .reduce((acc, t) => {
@@ -446,6 +445,10 @@ export function FinancesDashboard() {
               allTransactions={allTransactions}
               currentDate={currentDate}
               formatCurrency={formatCurrency}
+              categories={categories}
+              budgets={budgets}
+              tempCategories={tempCategories}
+              tempBudgets={tempBudgets}
             />
           )}
           {modalState.type === 'theme' && (

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { Bar, BarChart, XAxis, YAxis, Pie, PieChart, Cell, CartesianGrid } from 'recharts';
-import type { Transaction, ChartSubcategoryData } from '@/lib/types';
+import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets, TemporaryBudget } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
 
 interface ChartsModalProps {
@@ -15,6 +15,10 @@ interface ChartsModalProps {
   allTransactions: Transaction[];
   currentDate: Date;
   formatCurrency: (amount: number) => string;
+  categories: Categories;
+  budgets: Budgets;
+  tempCategories: TemporaryCategories;
+  tempBudgets: TemporaryBudgets;
 }
 
 const generateDistinctColors = (count: number): string[] => {
@@ -40,7 +44,17 @@ const compactCurrencyFormatter = (value: number) => {
 };
 
 
-export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, formatCurrency }: ChartsModalProps) {
+export function ChartsModal({ 
+    isOpen, 
+    onClose, 
+    allTransactions, 
+    currentDate, 
+    formatCurrency,
+    categories,
+    budgets,
+    tempCategories,
+    tempBudgets
+}: ChartsModalProps) {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
@@ -117,37 +131,64 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
     Gastos: { label: 'Gastos', color: hslToHex(0, 70, 50) },
   } satisfies ChartConfig;
 
-  // Data for Subcategory Expenses (Stacked Bar Chart)
-  const { subcategoryChartData, subcategoryChartConfig } = useMemo(() => {
-      const expenses = transactionsForCurrentMonth.filter(t => t.type === 'expense');
-      const subcategories = [...new Set(expenses.map(t => t.subcategory).filter(Boolean))] as string[];
-      const colors = generateDistinctColors(subcategories.length);
+  // Data for Budget Performance by Subcategory
+  const budgetPerformanceData = useMemo(() => {
+    const data: { name: string, Presupuesto: number, Gastado: number, Diferencia: number }[] = [];
+    const expensesBySubcategory = transactionsForCurrentMonth
+      .filter(t => t.type === 'expense' && t.subcategory)
+      .reduce((acc, t) => {
+        if (!acc[t.subcategory!]) acc[t.subcategory!] = 0;
+        acc[t.subcategory!] += t.amount;
+        return acc;
+      }, {} as { [key: string]: number });
 
-      const config = subcategories.reduce((acc, subcat, index) => {
-          acc[subcat] = { label: subcat, color: colors[index] };
-          return acc;
-      }, {} as ChartConfig);
+    // Permanent Budgets
+    Object.values(categories).flat().forEach(subcat => {
+      const budgetAmount = budgets[subcat] || 0;
+      if (budgetAmount > 0) {
+        const spent = expensesBySubcategory[subcat] || 0;
+        data.push({
+          name: subcat,
+          Presupuesto: budgetAmount,
+          Gastado: spent,
+          Diferencia: budgetAmount - spent,
+        });
+      }
+    });
 
-      const dataByCat: { [key: string]: ChartSubcategoryData } = {};
+    // Temporary Budgets active in the current month
+    Object.keys(tempBudgets).forEach(subcat => {
+      const tempBudget = tempBudgets[subcat];
+      if (tempBudget && typeof tempBudget.from?.year === 'number' && typeof tempBudget.to?.year === 'number') {
+        const fromDate = new Date(tempBudget.from.year, tempBudget.from.month, 1);
+        const toDate = new Date(tempBudget.to.year, tempBudget.to.month + 1, 0);
+        const currentMonthDate = new Date(currentYear, currentMonth, 1);
 
-      expenses.forEach(t => {
-          if (t.category && t.subcategory) {
-              if (!dataByCat[t.category]) {
-                  dataByCat[t.category] = { category: t.category };
-              }
-              if (!dataByCat[t.category][t.subcategory]) {
-                  dataByCat[t.category][t.subcategory] = 0;
-              }
-              dataByCat[t.category][t.subcategory]! += t.amount;
+        if (currentMonthDate >= fromDate && currentMonthDate <= toDate) {
+          // Avoid duplicates if a permanent budget for the same subcat exists
+          if (!data.some(d => d.name === subcat)) {
+            const budgetAmount = tempBudget.amount || 0;
+            const spent = expensesBySubcategory[subcat] || 0;
+             data.push({
+              name: subcat,
+              Presupuesto: budgetAmount,
+              Gastado: spent,
+              Diferencia: budgetAmount - spent,
+            });
           }
-      });
-      
-      return {
-          subcategoryChartData: Object.values(dataByCat),
-          subcategoryChartConfig: config,
-      };
+        }
+      }
+    });
+    
+    return data.sort((a,b) => b.Presupuesto - a.Presupuesto);
 
-  }, [transactionsForCurrentMonth]);
+  }, [transactionsForCurrentMonth, categories, budgets, tempCategories, tempBudgets, currentMonth, currentYear]);
+
+  const budgetPerformanceConfig = {
+    Presupuesto: { label: 'Presupuesto', color: hslToHex(210, 80, 60) },
+    Gastado: { label: 'Gastado', color: hslToHex(0, 70, 60) },
+  } satisfies ChartConfig;
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -167,7 +208,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                 <CardContent>
                     {pieChartData.length > 0 ? (
                     <ChartContainer config={pieChartConfig} className="mx-auto aspect-square h-[300px]">
-                        <PieChart>
+                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                             <ChartTooltip 
                                 cursor={false}
                                 content={({ payload }) => {
@@ -187,7 +228,6 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                 data={pieChartData} 
                                 dataKey="value" 
                                 nameKey="name" 
-                                labelLine={false}
                             >
                                  {pieChartData.map((entry) => (
                                     <Cell key={`cell-${entry.name}`} fill={entry.fill} />
@@ -235,6 +275,7 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                     return null;
                                 }}
                             />
+                             <ChartLegend content={<ChartLegendContent />} />
                             <Bar dataKey="Ingresos" fill="var(--color-Ingresos)" radius={4} />
                             <Bar dataKey="Gastos" fill="var(--color-Gastos)" radius={4} />
                         </BarChart>
@@ -244,19 +285,19 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
             
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Gastos por Subcategoría (Mes Actual)</CardTitle>
+                    <CardTitle>Rendimiento de Presupuestos por Subcategoría</CardTitle>
                 </CardHeader>
                 <CardContent>
-                   {subcategoryChartData.length > 0 ? (
-                    <ChartContainer config={subcategoryChartConfig} className="h-[400px] w-full">
-                        <BarChart data={subcategoryChartData} layout="vertical">
-                           <CartesianGrid horizontal={false} />
+                   {budgetPerformanceData.length > 0 ? (
+                    <ChartContainer config={budgetPerformanceConfig} className="h-[400px] w-full">
+                        <BarChart data={budgetPerformanceData} margin={{ left: 20 }}>
+                           <CartesianGrid vertical={false} />
                             <YAxis 
-                                dataKey="category" 
+                                dataKey="name" 
                                 type="category"
                                 tickLine={false} 
                                 axisLine={false}
-                                tickMargin={10}
+                                tickMargin={5}
                                 width={150}
                                 className="text-xs"
                             />
@@ -264,24 +305,27 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                             <ChartTooltip 
                                 content={({ payload, label }) => {
                                   if (payload && payload.length > 0) {
-                                    const total = payload.reduce((acc, entry) => acc + (entry.value as number), 0);
+                                    const performanceItem = budgetPerformanceData.find(item => item.name === label);
+                                    if (!performanceItem) return null;
+
                                     return (
                                       <div className="bg-background p-2 border rounded-lg shadow-lg text-sm w-64">
                                         <p className="font-bold mb-2">{label}</p>
                                         <div className="space-y-1">
-                                          {payload.slice().reverse().map((entry, index) => (
-                                            <div key={`item-${index}`} className="flex justify-between items-center gap-4">
-                                              <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }}></span>
-                                                <span className="text-xs">{entry.name}</span>
-                                              </div>
-                                              <span className="text-xs font-bold">{formatCurrency(entry.value as number)}</span>
-                                            </div>
-                                          ))}
+                                          <div className="flex justify-between items-center gap-4">
+                                            <span>Presupuesto:</span>
+                                            <span className="font-bold">{formatCurrency(performanceItem.Presupuesto)}</span>
+                                          </div>
+                                          <div className="flex justify-between items-center gap-4">
+                                            <span>Gastado:</span>
+                                            <span className="font-bold">{formatCurrency(performanceItem.Gastado)}</span>
+                                          </div>
                                         </div>
                                         <div className="border-t mt-2 pt-2 flex justify-between font-bold">
-                                            <span>Total</span>
-                                            <span>{formatCurrency(total)}</span>
+                                            <span>Diferencia:</span>
+                                            <span className={performanceItem.Diferencia >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                                {formatCurrency(performanceItem.Diferencia)}
+                                            </span>
                                         </div>
                                       </div>
                                     );
@@ -290,14 +334,13 @@ export function ChartsModal({ isOpen, onClose, allTransactions, currentDate, for
                                 }}
                             />
                             <ChartLegend content={<ChartLegendContent />} />
-                            {Object.keys(subcategoryChartConfig).map((key) => (
-                                <Bar key={key} dataKey={key} stackId="a" fill={`var(--color-${key})`} radius={4} />
-                            ))}
+                            <Bar dataKey="Presupuesto" fill="var(--color-Presupuesto)" radius={4} />
+                            <Bar dataKey="Gastado" fill="var(--color-Gastado)" radius={4} />
                         </BarChart>
                     </ChartContainer>
                     ) : (
                       <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                        No hay gastos con subcategorías para mostrar.
+                        No hay presupuestos definidos para este mes.
                       </div>
                     )}
                 </CardContent>

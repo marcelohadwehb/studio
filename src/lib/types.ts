@@ -51,7 +51,7 @@ export interface TemporaryCategories {
 }
 
 // ================== Charts ==================
-
+// This is not currently used but defined for future chart enhancements.
 export interface ChartSubcategoryData {
   category: string;
   [subcategory: string]: number | string;
