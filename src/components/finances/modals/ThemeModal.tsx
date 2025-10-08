@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { AppTheme, applyTheme, getDefaultTheme, presetThemes, PresetTheme } from '@/lib/theme';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Paintbrush, Check } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -106,46 +106,95 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-bold text-center text-lg mb-3">Previsualización de Componentes</h3>
-              <Card className="p-4 space-y-4" style={{ 
-                  backgroundColor: `hsl(var(--background))`, 
-                  borderColor: `hsl(var(--border))` 
-              }}>
-                <div>
-                  <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Botones Principales</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Button style={{ 
-                      backgroundColor: `hsl(var(--button-primary))`, 
-                      color: `hsl(var(--button-primary-foreground))`
-                    }}>Guardar</Button>
-                    <Button variant="secondary">Cancelar</Button>
-                  </div>
+        <div className="py-4 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Preview Column */}
+                <div className="space-y-4">
+                    <h3 className="font-bold text-center text-lg">Previsualización de Componentes</h3>
+                    <Card className="p-4 space-y-4" style={{ 
+                        backgroundColor: `hsl(var(--background))`, 
+                        borderColor: `hsl(var(--border))` 
+                    }}>
+                        <div>
+                        <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Botones Principales</h4>
+                        <div className="flex flex-wrap gap-2">
+                            <Button style={{ 
+                            backgroundColor: `hsl(var(--button-primary))`, 
+                            color: `hsl(var(--button-primary-foreground))`
+                            }}>Guardar</Button>
+                            <Button variant="secondary">Cancelar</Button>
+                        </div>
+                        </div>
+                        <div>
+                        <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Botones de Acción</h4>
+                        <div className="flex flex-wrap gap-2">
+                            <Button style={{ backgroundColor: 'hsl(var(--button-income))', color: 'hsl(var(--button-income-foreground))' }}>Ingreso</Button>
+                            <Button style={{ backgroundColor: 'hsl(var(--button-expense))', color: 'hsl(var(--button-expense-foreground))' }}>Gasto</Button>
+                            <Button style={{ backgroundColor: 'hsl(var(--button-chart))', color: 'hsl(var(--button-chart-foreground))' }}>Gráficos</Button>
+                            <Button style={{ backgroundColor: 'hsl(var(--button-budget))', color: 'hsl(var(--button-budget-foreground))' }}>Presupuestos</Button>
+                            <Button style={{ backgroundColor: 'hsl(var(--button-records))', color: 'hsl(var(--button-records-foreground))' }}>Registros</Button>
+                            <Button style={{ backgroundColor: 'hsl(var(--button-categories))', color: 'hsl(var(--button-categories-foreground))' }}>Categorías</Button>
+                        </div>
+                        </div>
+                    </Card>
                 </div>
-                <div>
-                  <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Botones de Acción</h4>
-                  <div className="flex flex-wrap gap-2">
-                     <Button style={{ backgroundColor: 'hsl(var(--button-income))', color: 'hsl(var(--button-income-foreground))' }}>Ingreso</Button>
-                     <Button style={{ backgroundColor: 'hsl(var(--button-expense))', color: 'hsl(var(--button-expense-foreground))' }}>Gasto</Button>
-                     <Button style={{ backgroundColor: 'hsl(var(--button-chart))', color: 'hsl(var(--button-chart-foreground))' }}>Gráficos</Button>
-                     <Button style={{ backgroundColor: 'hsl(var(--button-budget))', color: 'hsl(var(--button-budget-foreground))' }}>Presupuestos</Button>
-                     <Button style={{ backgroundColor: 'hsl(var(--button-records))', color: 'hsl(var(--button-records-foreground))' }}>Registros</Button>
-                     <Button style={{ backgroundColor: 'hsl(var(--button-categories))', color: 'hsl(var(--button-categories-foreground))' }}>Categorías</Button>
-                  </div>
+
+                {/* Preset Palettes Column */}
+                <div className="space-y-4">
+                    <h3 className="font-bold text-center text-lg">Paletas Predefinidas</h3>
+                     <Card>
+                        <CardContent className="p-4">
+                            <div className="grid grid-cols-3 gap-2">
+                                {presetThemes.map(preset => (
+                                <TooltipProvider key={preset.name}>
+                                    <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button 
+                                        variant="outline" 
+                                        className="h-10 w-full p-0 border-2" 
+                                        onClick={() => handleSelectPreset(preset)}
+                                        >
+                                        <div className="flex w-full h-full">
+                                            {Object.values(preset.colors).slice(0,4).map((color, index) => (
+                                            <div key={index} style={{ backgroundColor: color }} className="h-full w-1/4 first:rounded-l-sm last:rounded-r-sm"></div>
+                                            ))}
+                                        </div>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>{preset.name}</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                ))}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                        variant="outline"
+                                        onClick={handleResetTheme}
+                                        className="h-10 w-full"
+                                        >
+                                        Original
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Restablecer al tema original</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
-              </Card>
             </div>
-             <div>
-               <h3 className="font-bold text-center text-lg mb-3">Personalización Manual</h3>
+            
+            {/* Manual Customization Full Width Section */}
+            <div className="space-y-4">
+                <h3 className="font-bold text-center text-lg">Personalización Manual</h3>
                 <Card>
-                  <CardContent className="p-4 space-y-3">
+                <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
                     <ColorInput label="Principal (títulos, íconos)" id="primary" value={theme.primary} onChange={handleColorChange} />
                     <ColorInput label="Borde del Balance" id="balanceBorder" value={theme.balanceBorder} onChange={handleColorChange} />
                     <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
                     <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
-                    <div className="my-1"><hr className="border-border" /></div>
+                    <div className="sm:col-span-2 my-1"><hr className="border-border" /></div>
                     <ColorInput label="Botón Principal (Guardar)" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
                     <ColorInput label="Botón Gráfico" id="buttonChart" value={theme.buttonChart} onChange={handleColorChange} />
                     <ColorInput label="Botón Ingreso" id="buttonIncome" value={theme.buttonIncome} onChange={handleColorChange} />
@@ -153,53 +202,11 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
                     <ColorInput label="Botón Presupuesto" id="buttonBudget" value={theme.buttonBudget} onChange={handleColorChange} />
                     <ColorInput label="Botón Registros" id="buttonRecords" value={theme.buttonRecords} onChange={handleColorChange} />
                     <ColorInput label="Botón Categorías" id="buttonCategories" value={theme.buttonCategories} onChange={handleColorChange} />
-                  </CardContent>
+                </CardContent>
                 </Card>
             </div>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-bold text-center text-lg mb-3">Paletas Predefinidas</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {presetThemes.map(preset => (
-                  <TooltipProvider key={preset.name}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          className="h-10 w-full p-0 border-2" 
-                          onClick={() => handleSelectPreset(preset)}
-                        >
-                          <div className="flex w-full h-full">
-                            {Object.values(preset.colors).slice(0,4).map((color, index) => (
-                              <div key={index} style={{ backgroundColor: color }} className="h-full w-1/4 first:rounded-l-sm last:rounded-r-sm"></div>
-                            ))}
-                          </div>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>{preset.name}</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ))}
-                 <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                         <Button
-                          variant="outline"
-                          onClick={handleResetTheme}
-                          className="h-10 w-full"
-                        >
-                          Original
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Restablecer al tema original</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-              </div>
-            </div>
-          </div>
         </div>
+
 
         <DialogFooter className="pt-4 justify-end sm:justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
