@@ -10,6 +10,7 @@ import { AppTheme, applyTheme, getDefaultTheme, presetThemes, PresetTheme } from
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Paintbrush, Check } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ThemeModalProps {
   isOpen: boolean;
