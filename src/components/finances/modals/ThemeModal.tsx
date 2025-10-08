@@ -95,19 +95,33 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
           {/* Preview Section */}
           <div className="space-y-4">
-            <h3 className="font-bold text-center text-lg">Vista Previa</h3>
+            <h3 className="font-bold text-center text-lg">Previsualización de Componentes</h3>
             <Card className="p-4" style={{ 
                 backgroundColor: `hsl(var(--background))`, 
                 borderColor: `hsl(var(--border))` 
             }}>
-              <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Tarjeta de Ejemplo</h4>
-              <p className="text-sm mb-4" style={{ color: `hsl(var(--muted-foreground))`}}>Así se verán los componentes.</p>
+              <h4 className="font-bold mb-2" style={{ color: `hsl(var(--foreground))`}}>Título de Ejemplo</h4>
+              <p className="text-sm mb-4" style={{ color: `hsl(var(--muted-foreground))`}}>Este es un texto de párrafo de ejemplo.</p>
               <div className="flex flex-wrap gap-2">
-                <Button style={{ 
-                  backgroundColor: `hsl(var(--button-primary))`, 
-                  color: `hsl(var(--primary-foreground))`
-                }}>Botón Principal</Button>
-                <Button variant="secondary">Botón Secundario</Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button style={{ 
+                        backgroundColor: `hsl(var(--button-primary))`, 
+                        color: `hsl(var(--button-primary-foreground))`
+                      }}>Botón Principal</Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Botón con estilo primario</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                 <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="secondary">Botón Secundario</Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Botón con estilo secundario</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <div className="flex gap-2 mt-4">
                 <div className="w-full h-4 rounded" style={{backgroundColor: `hsl(var(--chart-1))`}}></div>
@@ -162,14 +176,14 @@ export function ThemeModal({ isOpen, onClose }: ThemeModalProps) {
             <div>
                <h3 className="font-bold text-center text-lg mb-3">Personalización Manual</h3>
                <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
-                <ColorInput label="Principal" id="primary" value={theme.primary} onChange={handleColorChange} />
-                <ColorInput label="Fondo" id="background" value={theme.background} onChange={handleColorChange} />
-                <ColorInput label="Acento" id="accent" value={theme.accent} onChange={handleColorChange} />
+                <ColorInput label="Principal (títulos, íconos)" id="primary" value={theme.primary} onChange={handleColorChange} />
+                <ColorInput label="Fondo de la App" id="background" value={theme.background} onChange={handleColorChange} />
+                <ColorInput label="Acento (resaltados sutiles)" id="accent" value={theme.accent} onChange={handleColorChange} />
                 <ColorInput label="Botón Principal" id="buttonPrimary" value={theme.buttonPrimary} onChange={handleColorChange} />
-                <h4 className="font-semibold text-sm pt-2">Gráficos</h4>
-                <ColorInput label="Gráfico 1" id="chart1" value={theme.chart1} onChange={handleColorChange} />
-                <ColorInput label="Gráfico 2" id="chart2" value={theme.chart2} onChange={handleColorChange} />
-                <ColorInput label="Gráfico 3" id="chart3" value={theme.chart3} onChange={handleColorChange} />
+                <h4 className="font-semibold text-sm pt-2">Colores de Gráficos</h4>
+                <ColorInput label="Color Gráfico 1" id="chart1" value={theme.chart1} onChange={handleColorChange} />
+                <ColorInput label="Color Gráfico 2" id="chart2" value={theme.chart2} onChange={handleColorChange} />
+                <ColorInput label="Color Gráfico 3" id="chart3" value={theme.chart3} onChange={handleColorChange} />
                </div>
             </div>
           </div>
