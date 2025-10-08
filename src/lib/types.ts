@@ -49,3 +49,10 @@ export interface TemporaryBudgets {
 export interface TemporaryCategories {
   [category: string]: string[];
 }
+
+// ================== Charts ==================
+
+export interface ChartSubcategoryData {
+  category: string;
+  [subcategory: string]: number | string;
+}
