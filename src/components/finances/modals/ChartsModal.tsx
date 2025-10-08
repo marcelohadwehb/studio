@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { Bar, BarChart, XAxis, YAxis, Pie, PieChart, Cell, CartesianGrid } from 'recharts';
-import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets, TemporaryBudget } from '@/lib/types';
+import type { Transaction, Categories, Budgets, TemporaryCategories, TemporaryBudgets } from '@/lib/types';
 import { hslToHex } from '@/lib/theme';
 
 interface ChartsModalProps {
@@ -140,7 +140,7 @@ export function ChartsModal({
       }, {} as { [key: string]: number });
       
     const processCategory = (categoryName: string, subcategories: string[], isTemporary: boolean) => {
-        subcategories.forEach(subcat => {
+        subcategories.sort((a, b) => a.localeCompare(b)).forEach(subcat => {
             let budgetAmount = 0;
             if (isTemporary) {
                 const tempBudget = tempBudgets[subcat];
@@ -168,8 +168,8 @@ export function ChartsModal({
         });
     };
 
-    Object.entries(categories).forEach(([cat, subcats]) => processCategory(cat, subcats, false));
-    Object.entries(tempCategories).forEach(([cat, subcats]) => processCategory(cat, subcats, true));
+    Object.keys(categories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, categories[cat], false));
+    Object.keys(tempCategories).sort((a, b) => a.localeCompare(b)).forEach(cat => processCategory(cat, tempCategories[cat], true));
     
     return data.reduce((acc, item) => {
         if (!acc[item.category]) {
@@ -282,8 +282,9 @@ export function ChartsModal({
             
             <div className="lg:col-span-2 space-y-6">
                 <h3 className="text-xl font-semibold text-center -mb-2">Rendimiento de Presupuestos por Subcategoría</h3>
-                {Object.entries(budgetPerformanceData).map(([category, subcategoryData]) => {
-                    const chartHeight = subcategoryData.length * 35 + 50; // 35px per bar + 50px for padding/axis
+                {Object.keys(budgetPerformanceData).map((category) => {
+                    const subcategoryData = budgetPerformanceData[category];
+                    const chartHeight = subcategoryData.length * 35 + 60; // 35px per bar + 60px for padding/axis/legend
                     return (
                         <Card key={category}>
                             <CardHeader>
@@ -291,7 +292,7 @@ export function ChartsModal({
                             </CardHeader>
                             <CardContent>
                                {subcategoryData.length > 0 ? (
-                                <ChartContainer config={budgetPerformanceConfig} className={`h-[${chartHeight}px] w-full`}>
+                                <ChartContainer config={budgetPerformanceConfig} style={{ height: `${chartHeight}px` }} className="w-full">
                                     <BarChart 
                                         layout="vertical" 
                                         data={subcategoryData} 
